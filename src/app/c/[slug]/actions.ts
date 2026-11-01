@@ -38,7 +38,11 @@ export async function correctInsight(_prev: ActionResult, formData: FormData): P
 export async function correctHypothesis(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const p = Correction.safeParse(Object.fromEntries(formData));
   if (!p.success) return { ok: false, message: "Invalid input" };
-  getDb().update(schema.hypotheses).set({ userCorrection: p.data.text || null }).where(eq(schema.hypotheses.id, p.data.id)).run();
+  getDb()
+    .update(schema.hypotheses)
+    .set({ userCorrection: p.data.text || null, correctionAppliedRunId: null })
+    .where(eq(schema.hypotheses.id, p.data.id))
+    .run();
   revalidate(p.data.slug);
   return { ok: true, message: p.data.text ? "Correction saved — the next run will treat it as authoritative" : "Correction cleared" };
 }

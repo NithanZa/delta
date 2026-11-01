@@ -113,7 +113,7 @@ export function HypothesisCard({
       <div className="flex flex-wrap items-center gap-1.5">
         <Badge>{dimensionLabel[h.dimension]}</Badge>
         <Badge tone={statusTone[h.status]}>{h.status}</Badge>
-        {h.userCorrection && <Badge tone="accent">corrected by you</Badge>}
+        {h.userCorrection && <Badge tone="accent">{h.correctionAppliedRunId === null ? "corrected by you · applied next run" : `corrected by you · applied in ${runLabel(ws.runs, h.correctionAppliedRunId)}`}</Badge>}
         <span className="ml-auto text-xs text-muted">
           H{h.id} · updated in {runLabel(ws.runs, h.updatedRunId)}
         </span>

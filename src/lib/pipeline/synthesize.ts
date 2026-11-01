@@ -220,6 +220,18 @@ export async function runSynthesis(
     db.insert(schema.openQuestions).values({ competitorId: run.competitorId, createdRunId: run.id, question: q.question }).returning().get(),
   );
 
+  // Corrections acknowledged by an update this run are marked applied; pending ones are reported.
+  for (const h of state.hypotheses) {
+    if (!h.userCorrection || h.correctionAppliedRunId !== null) continue;
+    if (touched.has(h.id)) {
+      db.update(schema.hypotheses).set({ correctionAppliedRunId: run.id }).where(eq(schema.hypotheses.id, h.id)).run();
+      const replacement = db.select().from(schema.hypotheses).where(eq(schema.hypotheses.supersedesId, h.id)).get();
+      if (replacement) db.update(schema.hypotheses).set({ correctionAppliedRunId: run.id }).where(eq(schema.hypotheses.id, replacement.id)).run();
+    } else {
+      warn(`H${h.id} carries a user correction but the model did not update it; it will be required again next run`);
+    }
+  }
+
   const hypotheses = loadResearchState(db, run.competitorId).hypotheses;
   onEvent({
     stage: "synthesis",

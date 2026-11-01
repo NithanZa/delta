@@ -93,6 +93,27 @@ describe("executeRun", () => {
     expect(REPLAY_RUNS).toHaveLength(3);
   });
 
+  it("requires the model to honor a pending user correction and marks it applied", async () => {
+    const { db, comp } = setup();
+    const client = new MockLlmClient();
+    await runNext(db, comp.id, client);
+    const h = db.select().from(schema.hypotheses).get()!;
+    db.update(schema.hypotheses).set({ userCorrection: "We know this is only true for agencies with 10+ clients.", correctionAppliedRunId: null }).where(eq(schema.hypotheses.id, h.id)).run();
+
+    await runNext(db, comp.id, client);
+    const synthCall = client.calls.filter((c) => c.task === "synthesize").at(-1)!;
+    expect(synthCall.user).toContain("NEW USER CORRECTION");
+    expect(synthCall.user).toContain("10+ clients");
+    const after = db.select().from(schema.hypotheses).where(eq(schema.hypotheses.id, h.id)).get()!;
+    expect(after.correctionAppliedRunId).not.toBeNull();
+
+    // Once applied, the prompt no longer demands an update for it.
+    await runNext(db, comp.id, client);
+    const nextCall = client.calls.filter((c) => c.task === "synthesize").at(-1)!;
+    expect(nextCall.user).toContain("already reflected");
+    expect(nextCall.user).not.toContain("NEW USER CORRECTION");
+  });
+
   it("marks the run failed when a stage throws but keeps earlier output", async () => {
     const { db, comp } = setup();
     const client = new MockLlmClient().on("generate_insights", () => {

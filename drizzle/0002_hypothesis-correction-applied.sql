@@ -1,0 +1,1 @@
+ALTER TABLE `hypotheses` ADD `correction_applied_run_id` integer;

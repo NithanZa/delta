@@ -85,7 +85,11 @@ export function formatResearchState(state: ResearchState): string {
   for (const h of state.hypotheses) {
     out.push(`H${h.id} [${h.dimension}] [status ${h.status}] [confidence ${h.confidence.toFixed(2)}] ${h.statement}`);
     if (h.lastUpdate) out.push(`    last update: ${h.lastUpdate.change} — ${h.lastUpdate.reasoning}`);
-    if (h.userCorrection) out.push(`    USER CORRECTION (authoritative, must be respected): ${h.userCorrection}`);
+    if (h.userCorrection && h.correctionAppliedRunId === null) {
+      out.push(`    NEW USER CORRECTION (authoritative — you MUST emit an update for H${h.id} this run that honors it and says so in "reasoning"; use "revised" with a corrected statement if the statement is wrong, otherwise "strengthened"/"weakened" with adjusted confidence): ${h.userCorrection}`);
+    } else if (h.userCorrection) {
+      out.push(`    USER CORRECTION (authoritative, already reflected above): ${h.userCorrection}`);
+    }
   }
 
   out.push("", "## Open research questions raised earlier (cite as Q<id>)");

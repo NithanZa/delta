@@ -20,6 +20,7 @@ function walk(dir: string, rel = ""): string[] {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const relPath = rel ? `${rel}/${entry.name}` : entry.name;
     if (exclude.includes(relPath) || exclude.includes(entry.name)) continue;
+    if (/\.db-(wal|shm)$/.test(entry.name)) continue; // SQLite side files
     if (entry.isDirectory()) files.push(...walk(path.join(dir, entry.name), relPath));
     else files.push(relPath);
   }
@@ -30,12 +31,9 @@ const files = walk(root);
 const listFile = path.join(root, "dist", "files.txt");
 fs.writeFileSync(listFile, files.join("\n"));
 
-// PowerShell's Compress-Archive is available on every Windows box; tar on others.
-if (process.platform === "win32") {
-  const script = `$files = Get-Content -Path '${listFile}'; Compress-Archive -Path $files -DestinationPath '${out}' -CompressionLevel Optimal`;
-  execFileSync("powershell", ["-NoProfile", "-Command", script], { cwd: root, stdio: "inherit" });
-} else {
-  execFileSync("zip", ["-q", "-r", out, "-@"], { cwd: root, input: files.join("\n"), stdio: ["pipe", "inherit", "inherit"] });
-}
+// bsdtar ships with Windows 10+ (System32\tar.exe) and macOS; it writes a zip when the
+// output name ends in .zip and keeps relative paths. (PowerShell's Compress-Archive flattens them.)
+const tar = process.platform === "win32" ? path.join(process.env.SystemRoot ?? "C:\\Windows", "System32", "tar.exe") : "tar";
+execFileSync(tar, ["-a", "-c", "-f", out, "-T", listFile], { cwd: root, stdio: "inherit" });
 fs.rmSync(listFile);
 console.log(`Wrote ${out} (${(fs.statSync(out).size / 1024 / 1024).toFixed(1)} MB, ${files.length} files)`);

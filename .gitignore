@@ -45,3 +45,5 @@ next-env.d.ts
 /data/*.db-*
 !/data/demo/
 /dist
+*.db-wal
+*.db-shm

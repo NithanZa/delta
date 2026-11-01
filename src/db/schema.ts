@@ -198,6 +198,8 @@ export const hypotheses = sqliteTable("hypotheses", {
   updatedRunId: integer("updated_run_id").notNull().references(() => runs.id),
   supersedesId: integer("supersedes_id"),
   userCorrection: text("user_correction"),
+  /** The run whose synthesis acknowledged the current correction (null = not yet applied). */
+  correctionAppliedRunId: integer("correction_applied_run_id"),
 });
 
 export const hypothesisUpdates = sqliteTable("hypothesis_updates", {
