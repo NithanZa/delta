@@ -14,7 +14,11 @@
     "seed": "tsx scripts/seed.ts",
     "corpus:fetch": "tsx scripts/fetch-corpus.ts",
     "run": "tsx scripts/run.ts",
-    "demo:reset": "tsx scripts/demo-reset.ts"
+    "demo:reset": "tsx scripts/demo-reset.ts",
+    "demo:restore": "tsx scripts/demo-restore.ts",
+    "demo:snapshot": "tsx scripts/demo-snapshot.ts",
+    "demo:fresh": "tsx scripts/demo-reset.ts",
+    "package": "tsx scripts/package.ts"
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",

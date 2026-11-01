@@ -1,0 +1,41 @@
+/**
+ * Build dist/delta-submission.zip: the repository without node_modules, .next,
+ * .env.local or the working database, but with the corpus and the demo DB.
+ *
+ *   npm run package
+ */
+import fs from "node:fs";
+import path from "node:path";
+import { execFileSync } from "node:child_process";
+
+const root = process.cwd();
+const out = path.join(root, "dist", "delta-submission.zip");
+fs.mkdirSync(path.dirname(out), { recursive: true });
+if (fs.existsSync(out)) fs.rmSync(out);
+
+const exclude = ["node_modules", ".next", "dist", ".env.local", ".git", "data/delta.db", "data/delta.db-wal", "data/delta.db-shm"];
+
+function walk(dir: string, rel = ""): string[] {
+  const files: string[] = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const relPath = rel ? `${rel}/${entry.name}` : entry.name;
+    if (exclude.includes(relPath) || exclude.includes(entry.name)) continue;
+    if (entry.isDirectory()) files.push(...walk(path.join(dir, entry.name), relPath));
+    else files.push(relPath);
+  }
+  return files;
+}
+
+const files = walk(root);
+const listFile = path.join(root, "dist", "files.txt");
+fs.writeFileSync(listFile, files.join("\n"));
+
+// PowerShell's Compress-Archive is available on every Windows box; tar on others.
+if (process.platform === "win32") {
+  const script = `$files = Get-Content -Path '${listFile}'; Compress-Archive -Path $files -DestinationPath '${out}' -CompressionLevel Optimal`;
+  execFileSync("powershell", ["-NoProfile", "-Command", script], { cwd: root, stdio: "inherit" });
+} else {
+  execFileSync("zip", ["-q", "-r", out, "-@"], { cwd: root, input: files.join("\n"), stdio: ["pipe", "inherit", "inherit"] });
+}
+fs.rmSync(listFile);
+console.log(`Wrote ${out} (${(fs.statSync(out).size / 1024 / 1024).toFixed(1)} MB, ${files.length} files)`);
