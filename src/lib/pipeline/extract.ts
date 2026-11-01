@@ -184,7 +184,13 @@ export async function runExtraction(
             onEvent({ stage: "extract", level: "warn", message: `Dropped a fact with a non-verbatim quote on ${label}: "${d.quote.slice(0, 80)}…"` });
           }
 
-          const changes = await detectChangesForSnapshot(db, run, snapshot, ctx, client);
+          // Change detection is best-effort: if it fails, keep the page's facts and move on.
+          let changes: Awaited<ReturnType<typeof detectChangesForSnapshot>> = { facts: [], dropped: [], usage: { promptTokens: 0, completionTokens: 0 } };
+          try {
+            changes = await detectChangesForSnapshot(db, run, snapshot, ctx, client);
+          } catch (e) {
+            onEvent({ stage: "extract", level: "warn", message: `Change detection skipped for ${label}: ${(e as Error).message}` });
+          }
           addUsage(result.usage, changes.usage);
           result.changes.push(...changes.facts);
           result.dropped += changes.dropped.length;

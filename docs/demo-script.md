@@ -18,19 +18,21 @@ Expand one pricing snapshot. "Every fact comes with a verbatim quote, and the co
 
 Click Run 1's chip, then back to Overview. Read H1: "Buffer is investing in small agencies as a segment — 65%." Expand History → "created, with the fact ids."
 
-"This is `step-5-preview` reading 47 facts and separating what it observed from what it infers. Note H4: Delta believed Buffer had *no* partner program. Keep that in mind."
+"This is `step-5-preview` reading 47 facts and separating what it observed from what it infers. Note H4: Delta believed Buffer had *no* partner program, at 50%. Keep that in mind — it is wrong, and Delta will find out."
 
 ## 1:30 — Run 2: strengthened (Overview + Timeline, 30 s)
 
-"Run 2 adds 2024 pages: the Agency plan was cut from $120 to $100, support docs recommend it for 11+ channels." Show the hypothesis history: strengthened, confidence up. Switch to Timeline: the price cut event links back to the 2023 pricing event.
+"Run 2 adds 2024 pages: the Agency plan was cut from $120 to $100, support docs recommend it for 11+ channels." Show H1's history: strengthened, 65% → 78%. Also point at H6, created in Run 2 from one line on the pricing page — 'we're developing more options for large channel counts' — which Delta read as an upmarket move. Switch to Timeline: the price cut event links back to the 2023 pricing event.
 
 "Change detection compared two captures of the same URL and only sent the diff to `step-3.7-flash`."
 
-## 2:00 — Run 3: contradicted and revised (Overview, 50 s)
+## 2:00 — Run 3: revised, not deleted (Overview, 50 s)
 
-"Run 3 sees 2025–2026. The Agency plan is gone. A naive tracker says 'Buffer abandoned agencies'. Delta doesn't." Show the revised hypothesis: old statement struck through, new one below it, the history on both rows.
+"Run 3 sees 2025–2026. The Agency plan is gone from the pricing page. A naive tracker says 'Buffer abandoned agencies'. Delta says the opposite: H1 goes *up* to 85%, because the same pages show an Agency Partner Program, a 'built for agencies' post and two new agency case studies."
 
-"Buffer dropped the dedicated tier but launched an Agency Partner Program with 25% recurring commission and published 'Every Team feature, built for agencies'. H4 — 'no partner program' — is contradicted. The open question Delta raised in Run 1, 'does Buffer have a partner program?', is resolved in Run 3." (Questions tab, 5 s.)
+Open the **Superseded** section. "Two hypotheses were wrong and Delta revised them with the evidence attached: H4 'no partner program' is struck through and replaced by H7 — a hybrid of product-led growth and a 25%-commission partner program. H6 'moving upmarket to a custom tier' becomes H8 — aggressive tiered per-channel pricing instead." Expand H7's history: retired → revised, with the fact ids.
+
+Questions tab (5 s): "The question Delta raised in Run 1 — 'does Buffer have a partner program?' — is resolved in Run 3. And it raised a new one: the pricing page says $10 per channel while the help center says $12. That is a real inconsistency on Buffer's site that it caught."
 
 ## 2:50 — The insight for Loop (Insights tab, 40 s)
 
@@ -55,5 +57,5 @@ If there is time and the network is healthy, click **Run Run 4**: it analyzes th
 
 ## Screenshots to take
 
-1. Overview after Run 3 with the revised hypothesis expanded (struck-through old statement, history).
+1. Overview after Run 3 with the Superseded section open and H7's history expanded (struck-through H4, retired → revised).
 2. An insight card with the four sections and an *investigate* action, facts expanded.

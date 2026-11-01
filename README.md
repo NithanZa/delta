@@ -12,7 +12,7 @@ Your company is **Loop**, a small social-media scheduling tool that sells to mar
 |---|---|---|
 | Run 1 | Dec 2023 | Agency plan at $120/mo, an agency landing page, agency case study → hypothesis: *Buffer is investing in agencies as a segment* |
 | Run 2 | Dec 2024 | Agency plan cut to $100, support docs recommend it for 11+ channels, CEO note on per-channel "New Buffer" → **strengthened** |
-| Run 3 | Oct 2026 | Agency plan gone from pricing, "last updated November 2025", yet an Agency Partner Program, "built for agencies" post and two agency case studies → **contradicted and revised**: agencies are served through per-channel Team pricing and a partner channel, not a dedicated tier |
+| Run 3 | Oct 2026 | Agency plan gone from pricing, "last updated November 2025", yet an Agency Partner Program, "built for agencies" post and two agency case studies → the naive reading ("Buffer dropped agencies") is rejected: the segment hypothesis is **strengthened** to 0.85, "no partner program" is **retired and revised** into "hybrid PLG + 25%-commission partner program", "moving upmarket" is **revised** into "tiered per-channel pricing", and Run 1's open question about a partner program is **resolved** |
 
 Every hypothesis update cites facts, every fact has a quote you can check against the source, and you can correct Delta's interpretation; the next run treats your correction as authoritative.
 

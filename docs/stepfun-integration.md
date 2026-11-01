@@ -48,7 +48,9 @@ step-5-preview → insights: Observed · Inferred · Why it matters to <company>
 |---|---|---|---|---|---|---|---|
 | Run 1 (≤ 2023-12-31) | 5 | 41 (+6) | 5 created | 3 | 46,356 | 65,435 | 323 s |
 | Run 2 (≤ 2024-12-31) | 4 | 32 (+8) | 5 strengthened, 1 created | 4 | 45,723 | 71,739 | 296 s |
-| Run 3 (≤ 2026-10-31) | 9 | RUN3_FACTS | RUN3_UPDATES | RUN3_INSIGHTS | RUN3_PROMPT | RUN3_COMPLETION | RUN3_WALL |
+| Run 3 (≤ 2026-10-31) | 8 | 82 (+24) | 4 strengthened, 2 revised (+2 retired), 3 created | 4 | 105,408 | 124,526 | 537 s |
+
+What Run 3 did to the record: H1 "Buffer is investing in agencies as a segment" rose to 0.85 even though the dedicated Agency plan disappeared; H4 "Buffer has no partner program" was retired and replaced by H7 (Agency Partner Program with 25% recurring commission); H6 "Buffer is moving upmarket to a custom tier" was retired and replaced by H8 (tiered self-serve per-channel pricing instead); three open questions from Runs 1–2 were resolved, including "does Buffer have a partner program?". The model also flagged a real inconsistency between the pricing page ($10/channel) and the help center ($12/channel) as a new open question.
 
 Completion tokens are high relative to prompt tokens because both models reason before answering; `reasoning_effort: low` is used for extraction to keep this in check.
 
