@@ -21,9 +21,9 @@ The web app shows the company profile, the competitor workspace, and lets the us
 
 ## Acceptance criteria
 
-- [ ] AC1: `/` shows the seeded company and the Buffer competitor card; `/settings` saves edits to the company profile and research questions and they appear on `/`.
-- [ ] AC2: On `/c/buffer`, clicking "Run" starts a run, the log streams at least the select/extract/synthesis/insights/finalize stages, and the page refreshes with results without a manual reload.
-- [ ] AC3: Overview shows the strategy profile with five dimensions and confidence bars, and hypothesis cards with status badges and an expandable update history including reasoning.
-- [ ] AC4: Timeline lists events in date order with source links that open the original or archived page.
-- [ ] AC5: A replay label "Replaying snapshots captured on …" is visible on the workspace header.
-- [ ] AC6: `npm run check`, `npm test`, and `npm run build` pass.
+- [x] AC1: `/` shows the seeded company and the Buffer competitor card; `/settings` saves edits to the company profile and research questions and they appear on `/`.
+- [x] AC2: On `/c/buffer`, clicking "Run" starts a run, the log streams at least the select/extract/synthesis/insights/finalize stages, and the page refreshes with results without a manual reload.
+- [x] AC3: Overview shows the strategy profile with five dimensions and confidence bars, and hypothesis cards with status badges and an expandable update history including reasoning.
+- [x] AC4: Timeline lists events in date order with source links that open the original or archived page.
+- [x] AC5: A replay label "Replaying snapshots captured on …" is visible on the workspace header.
+- [x] AC6: `npm run check`, `npm test`, and `npm run build` pass.
