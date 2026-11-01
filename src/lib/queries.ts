@@ -2,7 +2,8 @@ import "server-only";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { schema } from "@/db";
-import type { Fact, Hypothesis, HypothesisUpdate, Snapshot } from "@/db/schema";
+import type { Fact, Hypothesis, HypothesisChange, HypothesisUpdate, OpenQuestion, Run, Snapshot } from "@/db/schema";
+import { HYPOTHESIS_CHANGES } from "@/db/schema";
 import { nextReplayRun } from "@/lib/pipeline/presets";
 
 export function getCompany() {
@@ -33,6 +34,75 @@ export function listQuestions(competitorId: number) {
 }
 
 export type HypothesisWithHistory = Hypothesis & { history: HypothesisUpdate[]; supersededBy: Hypothesis | null };
+
+export type RunDeltaRow = { update: HypothesisUpdate; hypothesis: HypothesisWithHistory; supersedes: Hypothesis | null };
+export type Trajectory = { hypothesis: HypothesisWithHistory; points: { run: Run; confidence: number | null }[] };
+export type RunDelta = {
+  run: Run;
+  rows: RunDeltaRow[];
+  counts: Record<HypothesisChange, number>;
+  questionsResolved: OpenQuestion[];
+  questionsRaised: OpenQuestion[];
+  eventsAdded: number;
+  insightsWritten: number;
+  wallMs: number | null;
+  trajectories: Trajectory[];
+};
+
+/** Everything the latest completed run changed, derived from rows already loaded for the workspace. */
+function buildRunDelta(args: {
+  runs: Run[];
+  hypotheses: HypothesisWithHistory[];
+  updates: HypothesisUpdate[];
+  questions: OpenQuestion[];
+  eventRunIds: number[];
+  insightRunIds: number[];
+}): RunDelta | null {
+  const done = args.runs.filter((r) => r.status === "done").sort((a, b) => a.id - b.id);
+  const run = done[done.length - 1];
+  if (!run) return null;
+  const byId = new Map(args.hypotheses.map((h) => [h.id, h]));
+  const rows: RunDeltaRow[] = args.updates
+    .filter((u) => u.runId === run.id)
+    .flatMap((u) => {
+      const hypothesis = byId.get(u.hypothesisId);
+      if (!hypothesis) return [];
+      return [{ update: u, hypothesis, supersedes: hypothesis.supersedesId ? (byId.get(hypothesis.supersedesId) ?? null) : null }];
+    });
+  const counts = Object.fromEntries(HYPOTHESIS_CHANGES.map((c) => [c, 0])) as Record<HypothesisChange, number>;
+  for (const r of rows) counts[r.update.change] += 1;
+
+  const started = run.startedAt ? Date.parse(run.startedAt) : NaN;
+  const finished = run.finishedAt ? Date.parse(run.finishedAt) : NaN;
+  const wallMs = run.stats.wallMs ?? (Number.isFinite(started) && Number.isFinite(finished) ? finished - started : null);
+
+  // Top 3 longest-lived hypotheses: most runs touched, then oldest. Confidence per run carries forward between updates.
+  const trajectories: Trajectory[] = [...args.hypotheses]
+    .map((h) => ({ h, span: new Set(h.history.map((u) => u.runId)).size }))
+    .sort((a, b) => b.span - a.span || a.h.id - b.h.id)
+    .slice(0, 3)
+    .map(({ h }) => {
+      let last: number | null = null;
+      const points = done.map((r) => {
+        const inRun = h.history.filter((u) => u.runId === r.id);
+        if (inRun.length) last = inRun[inRun.length - 1].newConfidence;
+        return { run: r, confidence: r.id < h.createdRunId ? null : last };
+      });
+      return { hypothesis: h, points };
+    });
+
+  return {
+    run,
+    rows,
+    counts,
+    questionsResolved: args.questions.filter((q) => q.status === "resolved" && q.resolvedRunId === run.id),
+    questionsRaised: args.questions.filter((q) => q.createdRunId === run.id),
+    eventsAdded: args.eventRunIds.filter((id) => id === run.id).length,
+    insightsWritten: args.insightRunIds.filter((id) => id === run.id).length,
+    wallMs,
+    trajectories,
+  };
+}
 
 export function getCompetitorWorkspace(slug: string) {
   const db = getDb();
@@ -83,6 +153,14 @@ export function getCompetitorWorkspace(slug: string) {
     isRunning: runs.some((r) => r.status === "running" || r.status === "queued"),
     pendingSnapshots: snapshots.filter((s) => s.processedRunId === null).length,
     capturedRange,
+    latestRunDelta: buildRunDelta({
+      runs,
+      hypotheses,
+      updates,
+      questions,
+      eventRunIds: timeline.map((e) => e.runId),
+      insightRunIds: insights.map((i) => i.runId),
+    }),
   };
 }
 

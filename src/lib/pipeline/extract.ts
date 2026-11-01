@@ -9,7 +9,7 @@ import type { OnEvent } from "./events";
 import { ChangeOutput, ExtractFactsOutput, type FactOutput } from "./schemas";
 import { extractFactsSystemPrompt, extractFactsUserPrompt } from "./prompts/extractFacts";
 import { detectChangeSystemPrompt, detectChangeUserPrompt } from "./prompts/detectChange";
-import { diffUnits } from "./diff";
+import { diffUnits, focusUnits, type UnitDiff } from "./diff";
 import { quoteIsVerbatim } from "./verbatim";
 
 export type ExtractionResult = {
@@ -23,6 +23,8 @@ export type ExtractionResult = {
 // The StepFun key allows 5 concurrent requests; leave headroom for the UI and retries.
 const CONCURRENCY = 3;
 const EXTRACT_MAX_TOKENS = 8192;
+// Above this many differing lines (a redesigned page), only lines with numbers/prices/commercial terms go to the model.
+const MAX_DIFF_UNITS = 400;
 
 /** Snapshots dated on/before the cutoff that no run has processed yet. */
 export function selectSnapshotsForRun(db: Db, competitorId: number, cutoffDate: string): Snapshot[] {
@@ -124,10 +126,13 @@ export async function detectChangesForSnapshot(
 ): Promise<{ facts: Fact[]; dropped: FactOutput[]; usage: LlmUsage; previous?: Snapshot }> {
   const previous = previousSnapshotOf(db, snapshot);
   if (!previous) return { facts: [], dropped: [], usage: { promptTokens: 0, completionTokens: 0 } };
-  const diff = diffUnits(previous.extractedText, snapshot.extractedText);
+  let diff: UnitDiff = diffUnits(previous.extractedText, snapshot.extractedText);
   // Only the differing lines go to the model; identical captures cost nothing.
   if (diff.removed.length === 0 && diff.added.length === 0) {
     return { facts: [], dropped: [], usage: { promptTokens: 0, completionTokens: 0 }, previous };
+  }
+  if (diff.removed.length + diff.added.length > MAX_DIFF_UNITS) {
+    diff = { ...diff, removed: focusUnits(diff.removed), added: focusUnits(diff.added), filtered: true };
   }
   const res = await callJson({
     task: "detect_change",

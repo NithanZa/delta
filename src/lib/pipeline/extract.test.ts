@@ -84,6 +84,43 @@ describe("runExtraction", () => {
     expect(changeCalls[0].user.split("=== CURRENT VERSION")[0]).not.toContain("approval workflows");
   });
 
+  it("filters a very large diff down to commercial lines and tells the model", async () => {
+    const { db, comp, ctx, mkRun } = setup();
+    // A redesigned page: 500 distinct filler lines on each side (diffUnits collapses duplicates) plus a handful of lines that matter.
+    const abc = "abcdefghijklmnopqrstuvwxyz";
+    const filler = (tag: string) => Array.from({ length: 500 }, (_, i) => `${tag} paragraph about our story and values, part ${abc[i % 26]}${abc[Math.floor(i / 26)]}.`);
+    const prevText = ["Buffer pricing page.", ...filler("Old"), "Agency plans start at $120 per month for up to 10 channels."].join("\n");
+    const curText = ["Buffer pricing page.", ...filler("New"), "Team plans start at $12 per month per channel for every user."].join("\n");
+    const rec = (text: string, publishedAt: string) => ({
+      url: "https://buffer.com/pricing-v2",
+      sourceType: "pricing" as const,
+      provider: "seeded" as const,
+      title: "pricing-v2",
+      publishedAt,
+      fetchedAt: "2026-10-31T00:00:00.000Z",
+      archiveUrl: null,
+      rawHtml: "",
+      extractedText: text,
+      contentHash: hashContent(text),
+    });
+    insertSnapshotRecord(db, comp.id, rec(prevText, "2025-01-10"));
+    insertSnapshotRecord(db, comp.id, rec(curText, "2025-06-10"));
+    const client = new MockLlmClient();
+    await runExtraction(db, mkRun("Run A", "2025-01-31"), ctx, () => {}, client);
+    await runExtraction(db, mkRun("Run B", "2025-06-30"), ctx, () => {}, client);
+
+    const call = client.calls.filter((c) => c.task === "detect_change" && c.user.includes("pricing-v2")).at(-1)!;
+    expect(call.user).toContain("the diff was large, so it was FILTERED");
+    expect(call.user).toContain("$120 per month");
+    expect(call.user).toContain("$12 per month per channel");
+    const diffPart = call.user.split("=== CURRENT VERSION")[0];
+    expect(diffPart).not.toContain("paragraph about our story");
+    expect(diffPart.length).toBeLessThan(2_000);
+    // A diff of ordinary size is passed through untouched.
+    const small = client.calls.find((c) => c.task === "detect_change" && c.user.includes("buffer.com/pricing\n"))!;
+    expect(small.user).not.toContain("FILTERED");
+  });
+
   it("drops facts whose quote is not verbatim and records it in the events", async () => {
     const { db, ctx, mkRun } = setup();
     const client = new MockLlmClient().on("extract_facts", () => ({

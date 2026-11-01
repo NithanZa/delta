@@ -4,6 +4,7 @@ import { Badge, Card, ConfidenceBar, EmptyState, SectionTitle, cx, type BadgeTon
 import { EvidenceList } from "@/components/evidence-list";
 import { CorrectionForm } from "@/components/correction-form";
 import { linkRefs } from "@/components/refs";
+import { RunDelta } from "@/components/run-delta";
 import { correctHypothesis } from "@/app/c/[slug]/actions";
 import type { HypothesisWithHistory, Workspace } from "@/lib/queries";
 import { factMap, snapshotMap } from "@/lib/queries";
@@ -45,6 +46,11 @@ export function Overview({ ws }: { ws: Workspace }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.25fr]">
+      {ws.latestRunDelta && (
+        <div className="lg:col-span-2">
+          <RunDelta ws={ws} delta={ws.latestRunDelta} />
+        </div>
+      )}
       <div>
         <SectionTitle right={ws.profile && <span className="text-xs text-muted">as of {runLabel(ws.runs, ws.profile.runId)}</span>}>Strategy profile</SectionTitle>
         {ws.profile ? (

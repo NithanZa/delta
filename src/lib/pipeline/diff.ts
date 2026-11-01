@@ -20,7 +20,22 @@ export function splitUnits(text: string): string[] {
   return units;
 }
 
-export type UnitDiff = { removed: string[]; added: string[]; prevUnits: number; curUnits: number };
+export type UnitDiff = {
+  removed: string[];
+  added: string[];
+  prevUnits: number;
+  curUnits: number;
+  /** Set when the diff was reduced with focusUnits before being sent to the model. */
+  filtered?: boolean;
+};
+
+// A digit, a currency symbol, or a commercial term (word-prefix match, so "plans", "limited" and "users" count).
+const FOCUS_PATTERN = /\d|[$€£¥]|\b(?:plan|price|pricing|channel|user|seat|agency|team|free|trial|limit|feature|integration|partner)/i;
+
+/** Keep only the units likely to carry a commercial change; used when a diff is too large to send whole. */
+export function focusUnits(units: string[]): string[] {
+  return units.filter((u) => FOCUS_PATTERN.test(u));
+}
 
 /** Units present in only one of the two versions (order preserved, duplicates collapsed). */
 export function diffUnits(previous: string, current: string): UnitDiff {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { diffUnits, splitUnits } from "./diff";
+import { diffUnits, focusUnits, splitUnits } from "./diff";
 
 describe("diffUnits", () => {
   it("returns only the lines that differ, ignoring whitespace and quote style", () => {
@@ -21,5 +21,29 @@ describe("diffUnits", () => {
     const units = splitUnits("First sentence is here. Second sentence follows it. ".repeat(6) + "Tail sentence ends the paragraph.");
     expect(units.length).toBeGreaterThan(3);
     expect(units[0]).toBe("First sentence is here.");
+  });
+});
+
+describe("focusUnits", () => {
+  it("keeps lines with digits, currency symbols or commercial terms and drops the rest", () => {
+    const kept = [
+      "Starts at $12 per month",
+      "Prices shown in €",
+      "The Agency tier was renamed",
+      "Unlimited USERS included",
+      "Connect every channel you manage",
+      "Try it free for a while",
+      "Partner with us",
+      "Limited-time offer",
+      "Up to 10 clients",
+    ];
+    const dropped = [
+      "We believe in building in the open",
+      "Read the latest from our blog",
+      "Cookie preferences and legal notice",
+      "Our story, values and culture",
+    ];
+    expect(focusUnits([...dropped, ...kept])).toEqual(kept);
+    expect(focusUnits([])).toEqual([]);
   });
 });
