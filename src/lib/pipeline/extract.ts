@@ -9,6 +9,7 @@ import type { OnEvent } from "./events";
 import { ChangeOutput, ExtractFactsOutput, type FactOutput } from "./schemas";
 import { extractFactsSystemPrompt, extractFactsUserPrompt } from "./prompts/extractFacts";
 import { detectChangeSystemPrompt, detectChangeUserPrompt } from "./prompts/detectChange";
+import { diffUnits } from "./diff";
 import { quoteIsVerbatim } from "./verbatim";
 
 export type ExtractionResult = {
@@ -19,7 +20,9 @@ export type ExtractionResult = {
   processedSnapshotIds: number[];
 };
 
-const CONCURRENCY = 4;
+// The StepFun key allows 5 concurrent requests; leave headroom for the UI and retries.
+const CONCURRENCY = 3;
+const EXTRACT_MAX_TOKENS = 8192;
 
 /** Snapshots dated on/before the cutoff that no run has processed yet. */
 export function selectSnapshotsForRun(db: Db, competitorId: number, cutoffDate: string): Snapshot[] {
@@ -104,7 +107,8 @@ export async function extractFactsForSnapshot(
     system: extractFactsSystemPrompt(ctx),
     user: extractFactsUserPrompt(snapshot),
     schema: ExtractFactsOutput,
-    maxTokens: 4096,
+    maxTokens: EXTRACT_MAX_TOKENS,
+    reasoningEffort: "low",
     client,
   });
   const { kept, dropped } = filterVerbatim(res.data.facts, [snapshot.extractedText]);
@@ -120,13 +124,19 @@ export async function detectChangesForSnapshot(
 ): Promise<{ facts: Fact[]; dropped: FactOutput[]; usage: LlmUsage; previous?: Snapshot }> {
   const previous = previousSnapshotOf(db, snapshot);
   if (!previous) return { facts: [], dropped: [], usage: { promptTokens: 0, completionTokens: 0 } };
+  const diff = diffUnits(previous.extractedText, snapshot.extractedText);
+  // Only the differing lines go to the model; identical captures cost nothing.
+  if (diff.removed.length === 0 && diff.added.length === 0) {
+    return { facts: [], dropped: [], usage: { promptTokens: 0, completionTokens: 0 }, previous };
+  }
   const res = await callJson({
     task: "detect_change",
     model: MODELS.fast,
     system: detectChangeSystemPrompt(ctx),
-    user: detectChangeUserPrompt(snapshot.url, previous, snapshot),
+    user: detectChangeUserPrompt(snapshot.url, previous, snapshot, diff),
     schema: ChangeOutput,
-    maxTokens: 4096,
+    maxTokens: EXTRACT_MAX_TOKENS,
+    reasoningEffort: "low",
     client,
   });
   const { kept, dropped } = filterVerbatim(res.data.changes, [snapshot.extractedText, previous.extractedText]);

@@ -77,8 +77,11 @@ describe("runExtraction", () => {
     expect(r2.changes[0].runId).toBe(run2.id);
     const changeCalls = client.calls.filter((c) => c.task === "detect_change");
     expect(changeCalls).toHaveLength(1);
-    expect(changeCalls[0].user).toContain("=== PREVIOUS VERSION ===");
+    expect(changeCalls[0].user).toContain("(removed) ===");
     expect(changeCalls[0].user).toContain("$120 per month");
+    expect(changeCalls[0].user).toContain("$100 per month");
+    // Unchanged lines are not sent to the model.
+    expect(changeCalls[0].user.split("=== CURRENT VERSION")[0]).not.toContain("approval workflows");
   });
 
   it("drops facts whose quote is not verbatim and records it in the events", async () => {

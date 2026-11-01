@@ -21,7 +21,19 @@ export type ExtractFactsOutput = z.infer<typeof ExtractFactsOutput>;
 export const ChangeOutput = z.object({ changes: z.array(FactSchema) });
 export type ChangeOutput = z.infer<typeof ChangeOutput>;
 
-const idList = z.array(z.coerce.number().int()).catch([]);
+/** Accepts 12, "12", "F12", "H3" … and returns the numeric ids. */
+const toId = (v: unknown): number | null => {
+  const n = parseInt(String(v).replace(/\D/g, ""), 10);
+  return Number.isFinite(n) ? n : null;
+};
+const idList = z
+  .array(z.union([z.number(), z.string()]))
+  .catch([])
+  .transform((arr) => arr.map(toId).filter((n): n is number => n !== null));
+const idOrNull = z
+  .union([z.number(), z.string(), z.null()])
+  .catch(null)
+  .transform((v) => (v === null || v === "" ? null : toId(v)));
 
 export const TimelineEventOutput = z.object({
   eventDate: isoDate,
@@ -32,7 +44,7 @@ export const TimelineEventOutput = z.object({
 });
 
 export const HypothesisUpdateOutput = z.object({
-  hypothesisId: z.coerce.number().int().nullable().catch(null),
+  hypothesisId: idOrNull,
   dimension: z.enum(DIMENSIONS).catch("next_moves"),
   statement: z.string().min(10),
   change: z.enum(HYPOTHESIS_CHANGES),
@@ -59,7 +71,10 @@ export const SynthesisOutput = z.object({
   }),
   openQuestions: z
     .object({
-      resolved: z.array(z.object({ id: z.coerce.number().int(), resolution: z.string() })).default([]),
+      resolved: z
+        .array(z.object({ id: idOrNull, resolution: z.string() }))
+        .default([])
+        .transform((arr) => arr.filter((r): r is { id: number; resolution: string } => r.id !== null)),
       new: z.array(z.object({ question: z.string().min(10) })).default([]),
     })
     .default({ resolved: [], new: [] }),

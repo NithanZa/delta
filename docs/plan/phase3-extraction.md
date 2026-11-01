@@ -21,7 +21,7 @@ Given a run and a set of snapshots, Delta extracts observed facts with verbatim 
 
 ## Acceptance criteria
 
-- [ ] AC1: `runExtraction` on the seeded Run 1 cutoff (real API) stores facts for every Run 1 snapshot, each with a quote that passes `quoteIsVerbatim`.
-- [ ] AC2: Running extraction for Run 2 after Run 1 only processes snapshots not already processed and produces at least one `isChange = true` fact for `https://buffer.com/pricing`.
-- [ ] AC3: Facts with non-verbatim quotes are dropped and the drop is recorded in the run log.
-- [ ] AC4: `npm test` and `npm run check` pass.
+- [x] AC1: `runExtraction` on the seeded Run 1 cutoff (real API) stores facts for every Run 1 snapshot, each with a quote that passes `quoteIsVerbatim`.
+- [x] AC2: Running extraction for Run 2 after Run 1 only processes snapshots not already processed and produces at least one `isChange = true` fact for `https://buffer.com/pricing`.
+- [x] AC3: Facts with non-verbatim quotes are dropped and the drop is recorded in the run log.
+- [x] AC4: `npm test` and `npm run check` pass.

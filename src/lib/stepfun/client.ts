@@ -21,9 +21,11 @@ export type LlmRequest = {
   user: string;
   maxTokens?: number;
   temperature?: number;
+  /** step-3.7-flash supports low/medium/high; omit for models that do not. */
+  reasoningEffort?: "low" | "medium" | "high";
 };
 
-export type LlmResponse = { content: string; usage: LlmUsage };
+export type LlmResponse = { content: string; usage: LlmUsage; truncated?: boolean };
 
 export interface LlmClient {
   complete(req: LlmRequest): Promise<LlmResponse>;
@@ -47,8 +49,9 @@ export class StepFunClient implements LlmClient {
     this.openai = new OpenAI({
       apiKey: opts.apiKey ?? env.stepfunApiKey,
       baseURL: opts.baseURL ?? env.stepfunBaseUrl,
-      timeout: opts.timeoutMs ?? 90_000,
-      maxRetries: 1,
+      timeout: opts.timeoutMs ?? 180_000,
+      // The SDK backs off on 429/5xx/network errors; the API key has a small concurrency limit.
+      maxRetries: 4,
     });
   }
 
@@ -60,12 +63,14 @@ export class StepFunClient implements LlmClient {
         { role: "user", content: req.user },
       ],
       response_format: { type: "json_object" },
-      max_tokens: req.maxTokens ?? 4096,
+      max_tokens: req.maxTokens ?? 8192,
       temperature: req.temperature ?? 0.2,
+      ...(req.reasoningEffort ? { reasoning_effort: req.reasoningEffort } : {}),
     });
-    const content = res.choices[0]?.message?.content ?? "";
+    const choice = res.choices[0];
     return {
-      content,
+      content: choice?.message?.content ?? "",
+      truncated: choice?.finish_reason === "length",
       usage: {
         promptTokens: res.usage?.prompt_tokens ?? 0,
         completionTokens: res.usage?.completion_tokens ?? 0,
@@ -119,18 +124,21 @@ function tryParse<T>(content: string, schema: ZodType<T>): { ok: true; data: T }
 /**
  * Call a model in JSON mode and validate the result against a Zod schema.
  * On invalid JSON or schema mismatch, retries once with the error appended.
+ * When the output was cut off at max_tokens, the retry doubles the budget
+ * (reasoning models spend part of the budget thinking before the JSON).
  */
 export async function callJson<T>(args: CallJsonArgs<T>): Promise<CallJsonResult<T>> {
   const client = args.client ?? getLlmClient();
   const model = args.model ?? MODELS.fast;
   const usage: LlmUsage = { promptTokens: 0, completionTokens: 0 };
   let user = args.user;
+  let maxTokens = args.maxTokens ?? 8192;
   let lastError = "";
 
   for (let attempt = 1; attempt <= 2; attempt++) {
     let res: LlmResponse;
     try {
-      res = await client.complete({ ...args, model, user });
+      res = await client.complete({ ...args, model, user, maxTokens });
     } catch (e) {
       throw new LlmError(`StepFun call failed (${args.task}, ${model}): ${(e as Error).message}`, e);
     }
@@ -138,8 +146,14 @@ export async function callJson<T>(args: CallJsonArgs<T>): Promise<CallJsonResult
     usage.completionTokens += res.usage.completionTokens;
     const parsed = tryParse(res.content, args.schema);
     if (parsed.ok) return { data: parsed.data, usage, attempts: attempt };
-    lastError = parsed.error;
-    user = `${args.user}\n\nYour previous response was rejected. ${lastError}\nRespond again with valid JSON only, matching the required shape exactly.`;
+    if (res.truncated) {
+      lastError = `Output was cut off at max_tokens=${maxTokens}. ${parsed.error}`;
+      maxTokens *= 2;
+      user = `${args.user}\n\nYour previous response was cut off before the JSON was complete. Be more concise and respond with valid JSON only.`;
+    } else {
+      lastError = parsed.error;
+      user = `${args.user}\n\nYour previous response was rejected. ${lastError}\nRespond again with valid JSON only, matching the required shape exactly.`;
+    }
   }
   throw new LlmError(`StepFun returned invalid output twice (${args.task}, ${model}): ${lastError}`);
 }

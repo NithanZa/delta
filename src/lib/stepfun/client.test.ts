@@ -47,6 +47,22 @@ describe("callJson", () => {
     expect(client.calls[1].user).toContain("did not match the schema");
   });
 
+  it("doubles max_tokens when the output was truncated", async () => {
+    const calls: LlmRequest[] = [];
+    const client: LlmClient = {
+      async complete(req) {
+        calls.push(req);
+        if (calls.length === 1) return { content: '{"facts":[{"statement":"a', usage: { promptTokens: 1, completionTokens: 1 }, truncated: true };
+        return { content: '{"facts":[]}', usage: { promptTokens: 1, completionTokens: 1 } };
+      },
+    };
+    const res = await callJson({ task: "smoke", system: "s", user: "u", schema, client, maxTokens: 1000 });
+    expect(res.attempts).toBe(2);
+    expect(calls[0].maxTokens).toBe(1000);
+    expect(calls[1].maxTokens).toBe(2000);
+    expect(calls[1].user).toContain("cut off");
+  });
+
   it("wraps transport errors in LlmError", async () => {
     const client: LlmClient = {
       async complete() {

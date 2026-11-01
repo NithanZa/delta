@@ -45,8 +45,72 @@ export function firstSentences(text: string, n: number): string[] {
     .slice(0, n);
 }
 
+const ids = (prompt: string, prefix: string): number[] =>
+  Array.from(new Set(Array.from(prompt.matchAll(new RegExp(`\\b${prefix}(\\d+)\\b`, "g")), (m) => Number(m[1]))));
+
+const runLabel = (prompt: string) => prompt.match(/# This run: (Run \d+)/)?.[1] ?? "Run 1";
+
 export const defaultHandlers: Partial<Record<LlmTask, MockHandler>> = {
   smoke: () => ({ ok: true }),
+
+  /**
+   * Deterministic arc for tests: Run 1 creates a hypothesis, Run 2 strengthens
+   * it, Run 3 revises it. New facts are the F ids after the "NEW facts" header.
+   */
+  synthesize: (req) => {
+    const newSection = sectionAfter(req.user, "## NEW facts extracted");
+    const factIds = ids(newSection, "F");
+    const hypIds = ids(sectionAfter(req.user, "## Current hypotheses").split("## Open research")[0], "H");
+    const label = runLabel(req.user);
+    const date = req.user.match(/\[(\d{4}-\d{2}-\d{2})\] \[/)?.[1] ?? "2023-01-01";
+    const profileDim = (summary: string) => ({ summary, confidence: 0.5, factIds: factIds.slice(0, 2) });
+    let hypothesisUpdates: unknown[];
+    if (hypIds.length === 0) {
+      hypothesisUpdates = [
+        { hypothesisId: null, dimension: "customers", statement: "Mock: the competitor is investing in agencies as a segment", change: "created", confidence: 0.5, reasoning: "Mock reasoning: created from the first facts.", factIds },
+      ];
+    } else if (label === "Run 2") {
+      hypothesisUpdates = [
+        { hypothesisId: hypIds[0], dimension: "customers", statement: "Mock: the competitor is investing in agencies as a segment", change: "strengthened", confidence: 0.7, reasoning: "Mock reasoning: more agency evidence.", factIds },
+      ];
+    } else {
+      hypothesisUpdates = [
+        { hypothesisId: hypIds[0], dimension: "customers", statement: "Mock: the competitor dropped the dedicated agency tier and serves agencies through per-channel pricing", change: "revised", confidence: 0.6, reasoning: "Mock reasoning: pricing page no longer lists the plan.", factIds },
+      ];
+    }
+    return {
+      timelineEvents: factIds.length ? [{ eventDate: date, title: `Mock event for ${label}`, summary: "Mock summary of what happened.", factIds: factIds.slice(0, 2), relatedEventIds: ids(req.user, "E").slice(0, 1) }] : [],
+      hypothesisUpdates,
+      strategyProfile: {
+        customers: profileDim("Mock customers"),
+        productDirection: profileDim("Mock product direction"),
+        positioning: profileDim("Mock positioning"),
+        distribution: profileDim("Mock distribution"),
+        businessModel: profileDim("Mock business model"),
+      },
+      openQuestions: { resolved: ids(req.user, "Q").slice(0, 1).map((id) => ({ id, resolution: "Mock: answered by this run." })), new: [{ question: `Mock question raised in ${label}: what does the next pricing capture show?` }] },
+    };
+  },
+
+  generate_insights: (req) => {
+    const factIds = ids(sectionAfter(req.user, "## New facts this run"), "F");
+    const hypIds = ids(req.user, "H");
+    return {
+      insights: [
+        {
+          title: `Mock insight for ${runLabel(req.user)}`,
+          whatHappened: "Mock: the competitor changed its pricing page.",
+          whatItMeans: "Mock: this suggests a shift in segment focus.",
+          whyItMatters: "Mock: it affects our agency segment priority.",
+          whatToDoNext: "Mock: interview five agency customers about plan requirements.",
+          severity: "high",
+          hypothesisIds: hypIds.slice(0, 1),
+          factIds: factIds.slice(0, 2),
+          actions: [{ type: "investigate", text: "Mock: run interviews", rationale: "Mock rationale" }],
+        },
+      ],
+    };
+  },
 
   extract_facts: (req) => {
     const text = sectionAfter(req.user, "=== PAGE TEXT ===");
@@ -62,10 +126,10 @@ export const defaultHandlers: Partial<Record<LlmTask, MockHandler>> = {
   },
 
   detect_change: (req) => {
-    const current = sectionAfter(req.user, "=== CURRENT VERSION ===");
+    const added = sectionAfter(req.user, "=== LINES ONLY IN THE CURRENT VERSION (added) ===").split("=== CURRENT VERSION")[0];
     const prevDate = req.user.match(/Previous capture date: (\d{4}-\d{2}-\d{2})/)?.[1];
     const curDate = req.user.match(/Current capture date: (\d{4}-\d{2}-\d{2})/)?.[1] ?? null;
-    const [quote] = firstSentences(current, 1);
+    const [quote] = firstSentences(added, 1);
     if (!quote) return { changes: [] };
     return {
       changes: [
