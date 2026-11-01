@@ -47,3 +47,4 @@ next-env.d.ts
 /dist
 *.db-wal
 *.db-shm
+package-lock.json

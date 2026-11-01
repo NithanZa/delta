@@ -19,9 +19,9 @@ The Insights, Evidence and Questions tabs are complete. Each insight separates f
 
 ## Acceptance criteria
 
-- [ ] AC1: Each insight card displays the Observed / Inferred / Why it matters / Recommended sections and its actions with `respond`/`investigate` badges, and expanding "facts" shows verbatim quotes with source links.
-- [ ] AC2: Correcting a hypothesis stores `userCorrection`, shows a "Corrected by you" badge, and the next run's synthesis reasoning references the correction (verified in the run detail page).
-- [ ] AC3: Adding a live URL on the Evidence tab creates a snapshot that appears under "Not yet processed", and the next run extracts facts from it; a bad URL shows an inline error and the page remains usable.
-- [ ] AC4: Open questions show in the Questions tab and the RunPanel count; marking one resolved moves it to the resolved list.
-- [ ] AC5: The run detail page lists hypothesis updates, timeline events, insights and questions for that run with the run log.
-- [ ] AC6: `npm run check`, `npm test`, and `npm run build` pass.
+- [x] AC1: Each insight card displays the Observed / Inferred / Why it matters / Recommended sections and its actions with `respond`/`investigate` badges, and expanding "facts" shows verbatim quotes with source links.
+- [x] AC2: Correcting a hypothesis stores `userCorrection`, shows a "Corrected by you" badge, and the next run's synthesis reasoning references the correction (verified in the run detail page).
+- [x] AC3: Adding a live URL on the Evidence tab creates a snapshot that appears under "Not yet processed", and the next run extracts facts from it; a bad URL shows an inline error and the page remains usable.
+- [x] AC4: Open questions show in the Questions tab and the RunPanel count; marking one resolved moves it to the resolved list.
+- [x] AC5: The run detail page lists hypothesis updates, timeline events, insights and questions for that run with the run log.
+- [x] AC6: `npm run check`, `npm test`, and `npm run build` pass.
