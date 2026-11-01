@@ -50,7 +50,7 @@ export function RunDelta({ ws, delta }: { ws: Workspace; delta: RunDeltaData }) 
       >
         <span id="run-delta-title">What changed in {run.label}</span>
       </SectionTitle>
-      <Card className="grid gap-3">
+      <Card className="grid grid-cols-1 gap-3">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted">
           {changeCounts.length === 0 && <span>No hypothesis updates in this run.</span>}
           {changeCounts.map((c) => (
@@ -70,7 +70,7 @@ export function RunDelta({ ws, delta }: { ws: Workspace; delta: RunDeltaData }) 
         </div>
 
         {rows.length > 0 && (
-          <ul className="grid gap-1.5 border-t border-line pt-3">
+          <ul className="grid grid-cols-1 gap-1.5 border-t border-line pt-3">
             {rows.map(({ update: u, hypothesis: h, supersedes }) => (
               <li key={u.id} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm">
                 <Badge tone={statusTone[u.change]} className="w-24 justify-center">
@@ -99,7 +99,7 @@ export function RunDelta({ ws, delta }: { ws: Workspace; delta: RunDeltaData }) 
             <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted">
               Confidence across {delta.trajectories[0].points.map((p) => p.run.label).join(" → ")}
             </p>
-            <ul className="grid gap-1">
+            <ul className="grid grid-cols-1 gap-1">
               {delta.trajectories.map(({ hypothesis: h, points }) => (
                 <li key={h.id} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
                   <a href={`#h-${h.id}`} className="w-8 shrink-0 font-semibold text-accent hover:underline">
