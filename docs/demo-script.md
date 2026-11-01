@@ -6,7 +6,7 @@ Before you start: `npm run demo:restore && npm run dev`, open http://localhost:3
 
 "Every PM watches competitors in browser tabs and Slack threads. Signals are scattered across pricing pages, blog posts, docs and job listings, and nobody keeps the record of what we believed last quarter and why. Delta is an AI analyst that does the reading, keeps the record, and tells *us* what to do."
 
-Point at the Loop profile: a six-person scheduling tool whose priority is winning agencies. "Delta knows who we are, so it can judge what matters."
+Point at the Loop profile: a six-person scheduling tool whose priority is winning agencies. "Delta knows who we are, so it can judge what matters." Two competitor cards are tracked (Buffer and SocialPilot); the walkthrough uses Buffer. If a judge asks about the second one: SocialPilot's record revised itself twice on its own (white-label claim dropped in 2024; pricing model re-read after a 2026 blog post) — open `/c/socialpilot` and show the "What changed in Run 3" strip.
 
 ## 0:20 — The evidence is real (Evidence tab, 30 s)
 

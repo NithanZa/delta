@@ -66,6 +66,6 @@ Next.js 16 (App Router) · TypeScript · Tailwind v4 · SQLite via Drizzle (`dat
 ## Honest limitations
 
 - No search provider yet: sources are the curated manifest plus URLs you add. `SearchProvider` is the extension point.
-- One competitor is seeded. The schema and UI support many.
+- Two competitors are seeded (Buffer with 18 pages, SocialPilot with 8). More can be added in Settings; their evidence comes from the URLs you add until a search provider exists.
 - Historical pages are Wayback Machine captures; their `published_at` is the capture date, which is when the content was verifiably live.
 - A full run against the real API takes several minutes (the reasoning models think); the shipped demo database exists so a presentation never depends on the network.

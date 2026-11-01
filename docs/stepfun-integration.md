@@ -52,6 +52,16 @@ step-5-preview → insights: Observed · Inferred · Why it matters to <company>
 
 What Run 3 did to the record: H1 "Buffer is investing in agencies as a segment" rose to 0.85 even though the dedicated Agency plan disappeared; H4 "Buffer has no partner program" was retired and replaced by H7 (Agency Partner Program with 25% recurring commission); H6 "Buffer is moving upmarket to a custom tier" was retired and replaced by H8 (tiered self-serve per-channel pricing instead); three open questions from Runs 1–2 were resolved, including "does Buffer have a partner program?". The model also flagged a real inconsistency between the pricing page ($10/channel) and the help center ($12/channel) as a new open question.
 
+Second competitor, SocialPilot (8 real pages, run Nov 1 2026):
+
+| Run | Pages | Facts (+changes) | Hypothesis updates | Insights | Prompt tokens | Completion tokens | Wall time |
+|---|---|---|---|---|---|---|---|
+| Run 1 (≤ 2023-12-31) | 3 | 21 (+6) | 5 created | 4 | 21,010 | 38,827 | 191 s |
+| Run 2 (≤ 2024-12-31) | 1 | 11 (+6) | 2 revised (+2 retired), 1 strengthened | 3 | 13,480 | 24,922 | 157 s |
+| Run 3 (≤ 2026-11-01) | 4 | 31 (+18) | 4 strengthened, 1 revised (+1 retired), 1 created | 4 | 42,542 | 74,566 | 288 s |
+
+Here the record revised itself twice: the 2022–2023 "full white-label platform" reading (H13) was replaced in Run 2 when the 2024 agency page dropped that claim, and the "account-based pricing" hypothesis (H16) was replaced in Run 3 by a flat-rate-vs-per-seat reading after the 2026 blog post.
+
 Completion tokens are high relative to prompt tokens because both models reason before answering; `reasoning_effort: low` is used for extraction to keep this in check.
 
 ## Files
