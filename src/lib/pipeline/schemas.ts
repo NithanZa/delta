@@ -45,11 +45,14 @@ export const TimelineEventOutput = z.object({
 
 export const HypothesisUpdateOutput = z.object({
   hypothesisId: idOrNull,
-  dimension: z.enum(DIMENSIONS).catch("next_moves"),
-  statement: z.string().min(10),
+  /** null = keep the existing hypothesis's dimension. */
+  dimension: z.enum(DIMENSIONS).nullable().catch(null),
+  /** Only required for created/revised; the code keeps the existing statement otherwise. */
+  statement: z.string().catch("").default(""),
   change: z.enum(HYPOTHESIS_CHANGES),
-  confidence: z.coerce.number().min(0).max(1),
-  reasoning: z.string().min(10),
+  /** NaN = keep the existing confidence. */
+  confidence: z.coerce.number().min(0).max(1).catch(NaN),
+  reasoning: z.string().catch("").default(""),
   factIds: idList,
 });
 
@@ -59,9 +62,17 @@ export const ProfileDimensionOutput = z.object({
   factIds: idList,
 });
 
+/** Validate each array item separately so one malformed item does not reject a 16k-token response. */
+function itemsOf<T extends z.ZodTypeAny>(item: T) {
+  return z
+    .array(z.unknown())
+    .catch([])
+    .transform((arr) => arr.map((x) => item.safeParse(x)).filter((r) => r.success).map((r) => r.data as z.infer<T>));
+}
+
 export const SynthesisOutput = z.object({
-  timelineEvents: z.array(TimelineEventOutput).default([]),
-  hypothesisUpdates: z.array(HypothesisUpdateOutput).default([]),
+  timelineEvents: itemsOf(TimelineEventOutput),
+  hypothesisUpdates: itemsOf(HypothesisUpdateOutput),
   strategyProfile: z.object({
     customers: ProfileDimensionOutput,
     productDirection: ProfileDimensionOutput,
@@ -75,7 +86,7 @@ export const SynthesisOutput = z.object({
         .array(z.object({ id: idOrNull, resolution: z.string() }))
         .default([])
         .transform((arr) => arr.filter((r): r is { id: number; resolution: string } => r.id !== null)),
-      new: z.array(z.object({ question: z.string().min(10) })).default([]),
+      new: itemsOf(z.object({ question: z.string().min(10) })),
     })
     .default({ resolved: [], new: [] }),
 });
@@ -99,5 +110,5 @@ export const InsightOutput = z.object({
   actions: z.array(InsightActionOutput).default([]),
 });
 
-export const InsightsOutput = z.object({ insights: z.array(InsightOutput) });
+export const InsightsOutput = z.object({ insights: itemsOf(InsightOutput) });
 export type InsightsOutput = z.infer<typeof InsightsOutput>;

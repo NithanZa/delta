@@ -47,7 +47,7 @@ step-5-preview → insights: Observed · Inferred · Why it matters to <company>
 | Run | Pages | Facts (+changes) | Hypothesis updates | Insights | Prompt tokens | Completion tokens | Wall time |
 |---|---|---|---|---|---|---|---|
 | Run 1 (≤ 2023-12-31) | 5 | 41 (+6) | 5 created | 3 | 46,356 | 65,435 | 323 s |
-| Run 2 (≤ 2024-12-31) | 4 | RUN2_FACTS | RUN2_UPDATES | RUN2_INSIGHTS | RUN2_PROMPT | RUN2_COMPLETION | RUN2_WALL |
+| Run 2 (≤ 2024-12-31) | 4 | 32 (+8) | 5 strengthened, 1 created | 4 | 45,723 | 71,739 | 296 s |
 | Run 3 (≤ 2026-10-31) | 9 | RUN3_FACTS | RUN3_UPDATES | RUN3_INSIGHTS | RUN3_PROMPT | RUN3_COMPLETION | RUN3_WALL |
 
 Completion tokens are high relative to prompt tokens because both models reason before answering; `reasoning_effort: low` is used for extraction to keep this in check.

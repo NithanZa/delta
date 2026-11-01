@@ -17,6 +17,10 @@ type Props = {
   openQuestions: number;
 };
 
+function logFromRun(run: Run): LogLine[] {
+  return run.log.map((l: RunLogEntry) => ({ stage: l.message.match(/^\[(\w+)\]/)?.[1] ?? "", message: l.message.replace(/^\[\w+\] /, ""), level: l.level }));
+}
+
 const stageLabel: Record<string, string> = {
   select: "Select",
   extract: "Extract · step-3.7-flash",
@@ -31,23 +35,51 @@ export function RunPanel({ slug, competitorId, nextRun, runs, isRunning, pending
   const [status, setStatus] = useState<"idle" | "running" | "done" | "failed">(isRunning ? "running" : "idle");
   const [log, setLog] = useState<LogLine[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [stage, setStage] = useState<string>("");
+  const [stage, setStageState] = useState<string>("");
+  const [now, setNow] = useState(0);
+  const stageStartedAt = useRef(0);
   const logRef = useRef<HTMLDivElement>(null);
+  const streaming = useRef(false);
+
+  const setStage = (s: string) => {
+    if (s !== stage) stageStartedAt.current = Date.now();
+    setStageState(s);
+  };
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
   }, [log]);
 
-  // Fallback: if a run is in progress but we have no stream (page reload), poll it.
+  // Elapsed-time ticker while a run is in progress.
   useEffect(() => {
-    if (status !== "running" || log.length > 0) return;
+    if (status !== "running") return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [status]);
+
+  // Fallback: a run is in progress but this page has no stream (page reload) → poll it.
+  useEffect(() => {
+    if (status !== "running" || streaming.current) return;
     const running = runs.find((r) => r.status === "running" || r.status === "queued");
     if (!running) return;
+    let attempts = 0;
     const timer = setInterval(async () => {
+      if (++attempts > 900) {
+        clearInterval(timer);
+        setStatus("failed");
+        setError("Gave up waiting for the run after 30 minutes. Reload the page.");
+        return;
+      }
       const res = await fetch(`/api/runs/${running.id}`, { cache: "no-store" });
+      if (res.status === 404) {
+        clearInterval(timer);
+        setStatus("failed");
+        setError("This run no longer exists (database reset?). Reload the page.");
+        return;
+      }
       if (!res.ok) return;
       const run = (await res.json()) as Run;
-      setLog(run.log.map((l: RunLogEntry) => ({ stage: l.message.match(/^\[(\w+)\]/)?.[1] ?? "", message: l.message.replace(/^\[\w+\] /, ""), level: l.level })));
+      setLog(logFromRun(run));
       if (run.status === "done" || run.status === "failed") {
         clearInterval(timer);
         setStatus(run.status);
@@ -56,9 +88,10 @@ export function RunPanel({ slug, competitorId, nextRun, runs, isRunning, pending
       }
     }, 2000);
     return () => clearInterval(timer);
-  }, [status, log.length, runs, router]);
+  }, [status, runs, router]);
 
   async function start() {
+    streaming.current = true;
     setStatus("running");
     setLog([]);
     setError(null);
@@ -96,21 +129,26 @@ export function RunPanel({ slug, competitorId, nextRun, runs, isRunning, pending
     } catch (e) {
       // Stream dropped (long step-5-preview call, proxy timeout…): recover by polling the run row.
       if (runId) {
-        for (;;) {
+        for (let attempt = 0; attempt < 900; attempt++) {
           await new Promise((r) => setTimeout(r, 2000));
           const res = await fetch(`/api/runs/${runId}`, { cache: "no-store" });
+          if (res.status === 404) break;
           if (!res.ok) continue;
           const run = (await res.json()) as Run;
+          setLog(logFromRun(run));
           if (run.status === "done" || run.status === "failed") {
             setStatus(run.status);
             setError(run.error);
             router.refresh();
+            streaming.current = false;
             return;
           }
         }
       }
       setStatus("failed");
       setError((e as Error).message);
+    } finally {
+      streaming.current = false;
     }
   }
 
@@ -120,7 +158,14 @@ export function RunPanel({ slug, competitorId, nextRun, runs, isRunning, pending
     <div className="rounded-lg border border-line bg-surface p-4">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          {doneRuns.length === 0 && <span className="text-sm text-muted">No runs yet.</span>}
+          {doneRuns.length === 0 && status !== "running" && <span className="text-sm text-muted">No runs yet.</span>}
+          {runs
+            .filter((r) => r.status === "running" || r.status === "queued")
+            .map((r) => (
+              <span key={r.id} className="rounded-md border border-accent/40 px-2.5 py-1 text-xs text-accent">
+                {r.label} · in progress
+              </span>
+            ))}
           {doneRuns.map((r) => (
             <Link
               key={r.id}
@@ -161,25 +206,35 @@ export function RunPanel({ slug, competitorId, nextRun, runs, isRunning, pending
         </div>
       </div>
 
-      {(log.length > 0 || error) && (
+      {(log.length > 0 || error || status === "done") && (
         <div className="mt-3">
           {error && (
             <div className="mb-2 rounded-md border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
               Run failed: {error}
             </div>
           )}
+          {status === "done" && !error && (
+            <div className="mb-2 rounded-md border border-ok/40 bg-ok/10 px-3 py-2 text-sm text-ok">
+              Run finished.{" "}
+              <Link href={`/c/${slug}?tab=insights`} className="underline">
+                See the new insights →
+              </Link>
+            </div>
+          )}
           <div ref={logRef} className="max-h-56 overflow-y-auto rounded-md bg-bg p-3 font-mono text-xs leading-5">
             {log.map((l, i) => (
               <div key={i} className={cx("flex gap-2", l.level === "warn" && "text-warn", l.level === "error" && "text-bad")}>
                 <Badge tone={l.stage === "finalize" ? "ok" : l.level === "error" ? "bad" : l.level === "warn" ? "warn" : "neutral"} className="shrink-0 font-mono">
-                  {l.stage}
+                  {stageLabel[l.stage] ?? l.stage}
                 </Badge>
                 <span className="break-words">{l.message}</span>
               </div>
             ))}
             {status === "running" && (
               <div className="mt-1 flex items-center gap-2 text-muted">
-                <Spinner /> working…
+                <Spinner /> {stageLabel[stage] ?? "Working"} · {now ? Math.max(0, Math.floor((now - stageStartedAt.current) / 1000)) : 0}s
+                {(stage === "synthesis" || stage === "insights") && " — step-5-preview is reasoning over every fact so far; this step usually takes 1–3 minutes"}
+                {stage === "extract" && " — pages are read 3 at a time"}
               </div>
             )}
           </div>

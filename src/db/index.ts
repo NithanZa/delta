@@ -18,6 +18,7 @@ export function createDb(dbPath: string = env.dbPath): Db {
   const sqlite = new Database(dbPath);
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("foreign_keys = ON");
+  sqlite.pragma("busy_timeout = 10000"); // the dev server and the CLI may share this file
   const db = drizzle(sqlite, { schema });
   migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
   return db;

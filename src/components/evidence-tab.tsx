@@ -11,17 +11,20 @@ export function EvidenceTab({ ws, filterFactIds }: { ws: Workspace; filterFactId
   const snapshots = snapshotMap(ws.snapshots);
 
   if (filterFactIds) {
+    const found = filterFactIds.filter((id) => facts.has(id));
+    const missing = filterFactIds.filter((id) => !facts.has(id));
     return (
       <div className="grid gap-4">
         <div className="flex items-center justify-between">
           <SectionTitle>
-            {filterFactIds.length} selected fact{filterFactIds.length === 1 ? "" : "s"}
+            {found.length} selected fact{found.length === 1 ? "" : "s"}
           </SectionTitle>
           <a href={`/c/${ws.competitor.slug}?tab=evidence`} className="text-xs text-accent hover:underline">
-            Show all evidence →
+            Show all pages →
           </a>
         </div>
-        <EvidenceList factIds={filterFactIds} facts={facts} snapshots={snapshots} />
+        {missing.length > 0 && <p className="text-xs text-muted">Fact{missing.length === 1 ? "" : "s"} {missing.map((id) => `F${id}`).join(", ")} no longer exist (the analysis was reset).</p>}
+        <EvidenceList factIds={found} facts={facts} snapshots={snapshots} />
       </div>
     );
   }
@@ -44,13 +47,13 @@ export function EvidenceTab({ ws, filterFactIds }: { ws: Workspace; filterFactId
         </div>
       </Card>
 
-      {ws.snapshots.length === 0 && <EmptyState title="No snapshots">Run npm run seed, or add a URL above.</EmptyState>}
+      {ws.snapshots.length === 0 && <EmptyState title="No pages yet">Add a URL above to start.</EmptyState>}
 
       {orderedKeys.map((key) => {
         const list = groups.get(key)!;
         return (
           <div key={key ?? "pending"}>
-            <SectionTitle>{key === null ? `Not yet processed (${list.length}) — analyzed in the next run` : `Seen in ${runLabel(ws.runs, key)} (${list.length})`}</SectionTitle>
+            <SectionTitle>{key === null ? `Not yet analyzed (${list.length}) — picked up by the next run` : `Pages analyzed in ${runLabel(ws.runs, key)} (${list.length})`}</SectionTitle>
             <div className="grid gap-3">
               {list.map((s) => {
                 const sFacts = ws.facts.filter((f) => f.snapshotId === s.id);

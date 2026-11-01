@@ -44,9 +44,10 @@ export function AddUrlForm({ competitorId, slug }: { competitorId: number; slug:
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder={`https://… a page about ${slug}`}
+          aria-label="Page URL"
           className="min-w-64 flex-1 rounded-md border border-line bg-bg px-3 py-2 text-sm focus:border-accent focus:outline-none"
         />
-        <select value={sourceType} onChange={(e) => setSourceType(e.target.value)} className="rounded-md border border-line bg-bg px-2 py-2 text-sm">
+        <select value={sourceType} onChange={(e) => setSourceType(e.target.value)} aria-label="Source type" className="rounded-md border border-line bg-bg px-2 py-2 text-sm">
           {SOURCE_TYPES.map((t) => (
             <option key={t} value={t}>
               {t.replace("_", " ")}

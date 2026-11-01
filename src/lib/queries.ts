@@ -64,8 +64,8 @@ export function getCompetitorWorkspace(slug: string) {
   const insights = db.select().from(schema.insights).where(eq(schema.insights.competitorId, cid)).orderBy(desc(schema.insights.runId), asc(schema.insights.id)).all();
   const questions = db.select().from(schema.openQuestions).where(eq(schema.openQuestions.competitorId, cid)).orderBy(asc(schema.openQuestions.id)).all();
 
-  const fetchedDates = snapshots.map((s) => s.fetchedAt.slice(0, 10)).sort();
-  const capturedRange = fetchedDates.length ? { from: fetchedDates[0], to: fetchedDates[fetchedDates.length - 1] } : null;
+  const publishedDates = snapshots.map((s) => s.publishedAt.slice(0, 10)).sort();
+  const capturedRange = publishedDates.length ? { from: publishedDates[0], to: publishedDates[publishedDates.length - 1] } : null;
 
   return {
     competitor,

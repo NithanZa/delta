@@ -9,7 +9,7 @@ export default function Home() {
   if (!company) {
     return (
       <EmptyState title="No company profile yet">
-        Run <code className="rounded bg-surface-2 px-1">npm run seed</code> to load the demo, or fill in <Link href="/settings" className="text-accent underline">Settings</Link>.
+        Describe your company in <Link href="/settings" className="text-accent underline">Settings</Link> so Delta knows which competitor moves matter. (Developers: <code className="rounded bg-surface-2 px-1">npm run seed</code> loads the demo.)
       </EmptyState>
     );
   }
@@ -62,7 +62,14 @@ export default function Home() {
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
                   <span>{c.snapshotCount} snapshots</span>
                   <span>{c.insightCount} insights</span>
-                  <span>Last run: {c.lastRun ? `${c.lastRun.label} · ${fmtDate(c.lastRun.finishedAt ?? c.lastRun.startedAt)}` : "never"}</span>
+                  <span>
+                    Last run:{" "}
+                    {c.lastRun
+                      ? c.lastRun.status === "running" || c.lastRun.status === "queued"
+                        ? `${c.lastRun.label} · in progress`
+                        : `${c.lastRun.label} · ${fmtDate(c.lastRun.finishedAt ?? c.lastRun.startedAt)}${c.lastRun.status === "failed" ? " · failed" : ""}`
+                      : "never"}
+                  </span>
                 </div>
               </Link>
             ))}

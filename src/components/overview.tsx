@@ -3,6 +3,7 @@ import type { Run, StrategyProfileJson } from "@/db/schema";
 import { Badge, Card, ConfidenceBar, EmptyState, SectionTitle, cx, type BadgeTone } from "@/components/ui";
 import { EvidenceList } from "@/components/evidence-list";
 import { CorrectionForm } from "@/components/correction-form";
+import { linkRefs } from "@/components/refs";
 import { correctHypothesis } from "@/app/c/[slug]/actions";
 import type { HypothesisWithHistory, Workspace } from "@/lib/queries";
 import { factMap, snapshotMap } from "@/lib/queries";
@@ -108,7 +109,7 @@ export function HypothesisCard({
 }) {
   const superseded = h.supersedesId ? ws.hypotheses.find((o) => o.id === h.supersedesId) : null;
   return (
-    <Card id={`h-${h.id}`} className={cx(h.status === "retired" && "opacity-75")}>
+    <Card id={`h-${h.id}`} className={cx(h.status === "retired" && "border-dashed bg-surface/60")}>
       <div className="flex flex-wrap items-center gap-1.5">
         <Badge>{dimensionLabel[h.dimension]}</Badge>
         <Badge tone={statusTone[h.status]}>{h.status}</Badge>
@@ -118,7 +119,7 @@ export function HypothesisCard({
         </span>
       </div>
       {superseded && <p className="mt-2 text-sm text-muted line-through">{superseded.statement}</p>}
-      <p className={cx("mt-2 leading-relaxed", h.status === "retired" ? "text-sm text-muted" : "font-medium")}>{h.statement}</p>
+      <p className={cx("mt-2 leading-relaxed", h.status === "retired" ? "text-sm" : "font-medium")}>{h.statement}</p>
       <div className="mt-2">
         <ConfidenceBar value={h.confidence} />
       </div>
@@ -140,7 +141,7 @@ export function HypothesisCard({
       {children}
       {h.status !== "retired" && (
         <div className="mt-3">
-          <CorrectionForm slug={ws.competitor.slug} id={h.id} action={correctHypothesis} current={h.userCorrection} />
+          <CorrectionForm slug={ws.competitor.slug} id={h.id} action={correctHypothesis} current={h.userCorrection} ariaLabel={`Correct hypothesis H${h.id}`} />
         </div>
       )}
       {h.history.length > 0 && (
@@ -159,10 +160,12 @@ export function HypothesisCard({
                     {Math.round(u.newConfidence * 100)}%
                   </span>
                 </div>
-                <p className="mt-1 text-sm leading-relaxed text-fg/90">{u.reasoning}</p>
+                <p className="mt-1 text-sm leading-relaxed text-fg/90">{linkRefs(u.reasoning, ws.competitor.slug)}</p>
                 {u.factIds.length > 0 && (
                   <details className="mt-1">
-                    <summary className="text-xs text-accent hover:underline">{u.factIds.length} fact{u.factIds.length === 1 ? "" : "s"} cited</summary>
+                    <summary className="text-xs text-accent hover:underline">
+                      {u.factIds.length} fact{u.factIds.length === 1 ? "" : "s"} cited — show quotes
+                    </summary>
                     <div className="mt-2">
                       <EvidenceList factIds={u.factIds} facts={facts} snapshots={snapshots} compact />
                     </div>

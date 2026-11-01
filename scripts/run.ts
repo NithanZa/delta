@@ -22,7 +22,7 @@ async function main() {
   if (!competitor) throw new Error(`No competitor with slug "${slug}". Run npm run seed first.`);
 
   const preset = process.argv.includes("--next") || !arg("label") ? nextReplayRun(db, competitor.id) : { label: arg("label")!, cutoffDate: arg("cutoff")! };
-  const run = startRun(db, { competitorId: competitor.id, ...preset });
+  const run = startRun(db, { competitorId: competitor.id, ...preset }); // throws if a run is already in flight
   console.log(`▶ ${run.label} for ${competitor.name} (cutoff ${run.cutoffDate}, run id ${run.id})\n`);
 
   const result = await executeRun(db, run.id, (e) => {

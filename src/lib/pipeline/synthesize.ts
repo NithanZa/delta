@@ -74,18 +74,32 @@ export async function runSynthesis(
   // Hypotheses
   const hypothesisUpdates: HypothesisUpdate[] = [];
   const touched = new Set<number>();
+  const warn = (message: string) => onEvent({ stage: "synthesis", level: "warn", message });
   for (const u of out.hypothesisUpdates) {
     const factIds = validIds(u.factIds, knownFactIds, onEvent, "fact");
     const existing = u.hypothesisId !== null ? activeHyps.get(u.hypothesisId) : undefined;
+    const reasoning = u.reasoning || "(no reasoning given)";
+    // A model may emit "created" with an existing id, or several updates for one hypothesis; keep state consistent.
+    let change = u.change === "created" && existing ? "strengthened" : u.change;
+    if (existing && touched.has(existing.id)) {
+      warn(`Ignored a second "${change}" update for H${existing.id} in the same run`);
+      continue;
+    }
+    const statementOk = u.statement.trim().length >= 10;
 
-    if (u.change === "created" || (!existing && u.hypothesisId === null)) {
+    if (change === "created" || (!existing && u.hypothesisId === null)) {
+      if (!statementOk) {
+        warn(`Dropped a new hypothesis without a statement`);
+        continue;
+      }
+      const confidence = Number.isFinite(u.confidence) ? u.confidence : 0.5;
       const row = db
         .insert(schema.hypotheses)
         .values({
           competitorId: run.competitorId,
-          dimension: u.dimension,
-          statement: u.statement,
-          confidence: u.confidence,
+          dimension: u.dimension ?? "next_moves",
+          statement: u.statement.trim(),
+          confidence,
           status: "active",
           createdRunId: run.id,
           updatedRunId: run.id,
@@ -95,7 +109,7 @@ export async function runSynthesis(
       hypothesisUpdates.push(
         db
           .insert(schema.hypothesisUpdates)
-          .values({ hypothesisId: row.id, runId: run.id, change: "created", prevConfidence: null, newConfidence: u.confidence, reasoning: u.reasoning, factIds })
+          .values({ hypothesisId: row.id, runId: run.id, change: "created", prevConfidence: null, newConfidence: confidence, reasoning, factIds })
           .returning()
           .get(),
       );
@@ -104,16 +118,22 @@ export async function runSynthesis(
     }
 
     if (!existing) {
-      onEvent({ stage: "synthesis", level: "warn", message: `Dropped a "${u.change}" update for unknown hypothesis ${u.hypothesisId}` });
+      warn(`Dropped a "${change}" update for unknown hypothesis ${u.hypothesisId}`);
       continue;
     }
+    const confidence = Number.isFinite(u.confidence) ? u.confidence : existing.confidence;
 
-    if (u.change === "revised") {
+    if (change === "revised" && !statementOk) {
+      warn(`H${existing.id}: "revised" without a new statement; recorded as "contradicted" instead`);
+      change = "contradicted";
+    }
+
+    if (change === "revised") {
       db.update(schema.hypotheses).set({ status: "retired", updatedRunId: run.id }).where(eq(schema.hypotheses.id, existing.id)).run();
       hypothesisUpdates.push(
         db
           .insert(schema.hypothesisUpdates)
-          .values({ hypothesisId: existing.id, runId: run.id, change: "retired", prevConfidence: existing.confidence, newConfidence: existing.confidence, reasoning: `Superseded by a revised hypothesis. ${u.reasoning}`, factIds })
+          .values({ hypothesisId: existing.id, runId: run.id, change: "retired", prevConfidence: existing.confidence, newConfidence: existing.confidence, reasoning: `Superseded by a revised hypothesis. ${reasoning}`, factIds })
           .returning()
           .get(),
       );
@@ -121,9 +141,9 @@ export async function runSynthesis(
         .insert(schema.hypotheses)
         .values({
           competitorId: run.competitorId,
-          dimension: u.dimension,
-          statement: u.statement,
-          confidence: u.confidence,
+          dimension: u.dimension ?? existing.dimension,
+          statement: u.statement.trim(),
+          confidence,
           status: "revised",
           createdRunId: run.id,
           updatedRunId: run.id,
@@ -135,7 +155,7 @@ export async function runSynthesis(
       hypothesisUpdates.push(
         db
           .insert(schema.hypothesisUpdates)
-          .values({ hypothesisId: row.id, runId: run.id, change: "revised", prevConfidence: existing.confidence, newConfidence: u.confidence, reasoning: u.reasoning, factIds })
+          .values({ hypothesisId: row.id, runId: run.id, change: "revised", prevConfidence: existing.confidence, newConfidence: confidence, reasoning, factIds })
           .returning()
           .get(),
       );
@@ -144,15 +164,12 @@ export async function runSynthesis(
       continue;
     }
 
-    const status = u.change === "retired" ? "retired" : u.change;
-    db.update(schema.hypotheses)
-      .set({ status, confidence: u.confidence, updatedRunId: run.id, ...(u.change === "retired" ? {} : { statement: existing.statement }) })
-      .where(eq(schema.hypotheses.id, existing.id))
-      .run();
+    const status = change === "retired" ? "retired" : change;
+    db.update(schema.hypotheses).set({ status, confidence, updatedRunId: run.id }).where(eq(schema.hypotheses.id, existing.id)).run();
     hypothesisUpdates.push(
       db
         .insert(schema.hypothesisUpdates)
-        .values({ hypothesisId: existing.id, runId: run.id, change: u.change, prevConfidence: existing.confidence, newConfidence: u.confidence, reasoning: u.reasoning, factIds })
+        .values({ hypothesisId: existing.id, runId: run.id, change, prevConfidence: existing.confidence, newConfidence: confidence, reasoning, factIds })
         .returning()
         .get(),
     );

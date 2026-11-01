@@ -48,7 +48,7 @@ export function QuestionsForm({ competitorId, questions }: { competitorId: numbe
   return (
     <form action={action} className="grid gap-2">
       <input type="hidden" name="competitorId" value={competitorId} />
-      <textarea name="questions" rows={Math.max(5, questions.length + 1)} defaultValue={questions.join("\n")} className={inputCls} placeholder="One research question per line" />
+      <textarea name="questions" rows={Math.max(5, questions.length + 1)} defaultValue={questions.join("\n")} className={inputCls} placeholder="One research question per line" aria-label="Research questions, one per line" />
       <div className="flex items-center gap-3">
         <Button type="submit" variant="ghost" disabled={pending}>
           {pending ? "Saving…" : "Save questions"}

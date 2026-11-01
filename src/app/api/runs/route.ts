@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { nextReplayRun } from "@/lib/pipeline/presets";
-import { executeRun, startRun } from "@/lib/pipeline/run";
+import { executeRun, findActiveRun, startRun } from "@/lib/pipeline/run";
 
 const Body = z.object({
   competitorId: z.coerce.number().int(),
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   const competitor = db.select().from(schema.competitors).where(eq(schema.competitors.id, competitorId)).get();
   if (!competitor) return NextResponse.json({ error: "Competitor not found" }, { status: 404 });
 
-  const already = db.select().from(schema.runs).where(eq(schema.runs.competitorId, competitorId)).all().find((r) => r.status === "running" || r.status === "queued");
+  const already = findActiveRun(db, competitorId);
   if (already) return NextResponse.json({ error: `${already.label} is already running`, runId: already.id }, { status: 409 });
 
   const preset = parsed.data.label && parsed.data.cutoffDate ? { label: parsed.data.label, cutoffDate: parsed.data.cutoffDate } : nextReplayRun(db, competitorId);

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Badge, cx, fmtDate } from "@/components/ui";
+import { cx, fmtDate } from "@/components/ui";
 import { EvidenceTab } from "@/components/evidence-tab";
 import { InsightsFeed } from "@/components/insights-feed";
 import { Overview } from "@/components/overview";
@@ -55,10 +55,10 @@ export default async function CompetitorPage({ params, searchParams }: { params:
           </p>
         </div>
         {ws.capturedRange && (
-          <Badge tone="info" className="py-1">
-            Replaying {ws.snapshots.length} snapshots captured {fmtDate(ws.capturedRange.from)}
-            {ws.capturedRange.from !== ws.capturedRange.to && ` – ${fmtDate(ws.capturedRange.to)}`} · each run only sees pages dated on or before its cutoff
-          </Badge>
+          <p className="max-w-md rounded-md border border-info/40 px-3 py-1.5 text-xs leading-5 text-info">
+            Replaying {ws.snapshots.length} archived pages published {fmtDate(ws.capturedRange.from)}
+            {ws.capturedRange.from !== ws.capturedRange.to && ` – ${fmtDate(ws.capturedRange.to)}`}. Each run only sees pages dated on or before its cutoff.
+          </p>
         )}
       </div>
 
@@ -72,20 +72,25 @@ export default async function CompetitorPage({ params, searchParams }: { params:
         openQuestions={ws.questions_open.length}
       />
 
-      <nav className="flex gap-1 border-b border-line" role="tablist">
+      <nav className="flex gap-1 overflow-x-auto border-b border-line" aria-label="Competitor sections">
         {TABS.map(([key, label]) => (
           <Link
             key={key}
             href={`/c/${slug}?tab=${key}`}
-            role="tab"
-            aria-selected={tab === key}
+            aria-current={tab === key ? "page" : undefined}
             className={cx(
-              "-mb-px border-b-2 px-3 py-2 text-sm transition",
+              "-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm transition",
               tab === key ? "border-accent text-fg" : "border-transparent text-muted hover:text-fg",
             )}
           >
             {label}
-            {counts[key] > 0 && <span className="ml-1.5 text-xs text-muted">{counts[key]}</span>}
+            {counts[key] > 0 && (
+              <span className="ml-1.5 text-xs text-muted">
+                <span className="sr-only"> (</span>
+                {counts[key]}
+                <span className="sr-only">)</span>
+              </span>
+            )}
           </Link>
         ))}
       </nav>

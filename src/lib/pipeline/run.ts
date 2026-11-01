@@ -9,7 +9,37 @@ import { runExtraction } from "./extract";
 import { loadResearchState } from "./state";
 import { runInsights, runSynthesis } from "./synthesize";
 
+const STALE_AFTER_MS = 10 * 60 * 1000;
+
+/**
+ * The run currently in flight for a competitor, if any. A run whose log has
+ * not advanced in 10 minutes (server restart, crash) is marked failed so it
+ * cannot block future runs forever.
+ */
+export function findActiveRun(db: Db, competitorId: number): Run | undefined {
+  const active = db
+    .select()
+    .from(schema.runs)
+    .where(eq(schema.runs.competitorId, competitorId))
+    .all()
+    .find((r) => r.status === "running" || r.status === "queued");
+  if (!active) return undefined;
+  const lastTs = active.log.at(-1)?.ts ?? active.startedAt ?? new Date(0).toISOString();
+  if (Date.now() - new Date(lastTs).getTime() > STALE_AFTER_MS) {
+    db.update(schema.runs)
+      .set({ status: "failed", error: "Run stopped making progress (server restarted?)", finishedAt: new Date().toISOString() })
+      .where(eq(schema.runs.id, active.id))
+      .run();
+    db.update(schema.snapshots).set({ processedRunId: null }).where(eq(schema.snapshots.processedRunId, active.id)).run();
+    db.delete(schema.facts).where(eq(schema.facts.runId, active.id)).run();
+    return undefined;
+  }
+  return active;
+}
+
 export function startRun(db: Db, args: { competitorId: number; label: string; cutoffDate: string }): Run {
+  const active = findActiveRun(db, args.competitorId);
+  if (active) throw new Error(`${active.label} is already running`);
   return db.insert(schema.runs).values({ ...args, status: "queued" }).returning().get();
 }
 
@@ -38,6 +68,12 @@ export async function executeRun(db: Db, runId: number, onEvent: OnEvent = () =>
   const fail = (stage: RunEvent["stage"], e: unknown): Run => {
     const message = (e as Error).message ?? String(e);
     emit({ stage: "error", level: "error", message: `${stage} failed: ${message}` });
+    if (stage !== "insights") {
+      // Give the pages back to the next attempt; facts without synthesis would otherwise be orphaned.
+      db.update(schema.snapshots).set({ processedRunId: null }).where(eq(schema.snapshots.processedRunId, run.id)).run();
+      db.delete(schema.facts).where(eq(schema.facts.runId, run.id)).run();
+      emit({ stage: "error", level: "warn", message: "Pages from this run were released so the next run can analyze them again" });
+    }
     stats.wallMs = Date.now() - t0;
     return db
       .update(schema.runs)
@@ -48,12 +84,12 @@ export async function executeRun(db: Db, runId: number, onEvent: OnEvent = () =>
   };
 
   db.update(schema.runs).set({ status: "running", startedAt: new Date().toISOString() }).where(eq(schema.runs.id, run.id)).run();
-  emit({ stage: "select", message: `${run.label}: analyzing pages dated on or before ${run.cutoffDate}` });
 
-  const ctx = loadCompanyContext(db, run.competitorId);
-
+  let ctx;
   let extraction;
   try {
+    emit({ stage: "select", message: `${run.label}: analyzing pages dated on or before ${run.cutoffDate}` });
+    ctx = loadCompanyContext(db, run.competitorId);
     extraction = await runExtraction(db, run, ctx, emit, client);
   } catch (e) {
     return fail("extract", e);

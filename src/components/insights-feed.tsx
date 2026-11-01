@@ -4,6 +4,7 @@ import { EvidenceList } from "@/components/evidence-list";
 import { CorrectionForm } from "@/components/correction-form";
 import { InsightStatusButtons } from "@/components/insight-status";
 import { runLabel } from "@/components/overview";
+import { linkRefs } from "@/components/refs";
 import { correctInsight } from "@/app/c/[slug]/actions";
 import type { Workspace } from "@/lib/queries";
 import { factMap, snapshotMap } from "@/lib/queries";
@@ -21,7 +22,7 @@ export function InsightsFeed({ ws, companyName }: { ws: Workspace; companyName: 
   return (
     <div className="grid gap-4">
       {sorted.map((i) => (
-        <Card key={i.id} id={`i-${i.id}`} className={cx(i.status === "dismissed" && "opacity-60")}>
+        <Card key={i.id} id={`i-${i.id}`} className={cx(i.status === "dismissed" && "border-dashed bg-surface/60")}>
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge tone={severityTone[i.severity]}>{i.severity}</Badge>
             <Badge tone="accent">{runLabel(ws.runs, i.runId)}</Badge>
@@ -29,20 +30,18 @@ export function InsightsFeed({ ws, companyName }: { ws: Workspace; companyName: 
             {i.userCorrection && <Badge tone="accent">corrected by you</Badge>}
             <span className="ml-auto text-[11px] text-muted">I{i.id}</span>
           </div>
-          <h3 className="mt-2 text-lg font-semibold leading-snug">{i.title}</h3>
+          <h3 id={`i-${i.id}-title`} className={cx("mt-2 text-lg font-semibold leading-snug", i.status === "dismissed" && "line-through")}>
+            {i.title}
+          </h3>
 
           <dl className="mt-3 grid gap-3">
-            <Section label="Observed" tone="text-fg">
-              {i.whatHappened}
+            <Section label="Observed · facts with quotes" accent>
+              {linkRefs(i.whatHappened, ws.competitor.slug)}
             </Section>
-            <Section label="Inferred" tone="text-info">
-              {i.whatItMeans}
-            </Section>
-            <Section label={`Why it matters to ${companyName}`} tone="text-warn">
-              {i.whyItMatters}
-            </Section>
-            <Section label="Recommended" tone="text-accent">
-              {i.whatToDoNext}
+            <Section label="Inferred · Delta's interpretation">{linkRefs(i.whatItMeans, ws.competitor.slug)}</Section>
+            <Section label={`Why it matters to ${companyName}`}>{linkRefs(i.whyItMatters, ws.competitor.slug)}</Section>
+            <Section label="Recommended · what to do next">
+              {linkRefs(i.whatToDoNext, ws.competitor.slug)}
               {i.actions.length > 0 && (
                 <ul className="mt-2 grid gap-2">
                   {i.actions.map((a, idx) => (
@@ -83,8 +82,8 @@ export function InsightsFeed({ ws, companyName }: { ws: Workspace; companyName: 
                 ))}
               </span>
             )}
-            <InsightStatusButtons slug={ws.competitor.slug} id={i.id} status={i.status} />
-            <CorrectionForm slug={ws.competitor.slug} id={i.id} action={correctInsight} current={i.userCorrection} />
+            <InsightStatusButtons slug={ws.competitor.slug} id={i.id} status={i.status} title={i.title} />
+            <CorrectionForm slug={ws.competitor.slug} id={i.id} action={correctInsight} current={i.userCorrection} ariaLabel={`Correct insight: ${i.title}`} />
           </div>
 
           {i.factIds.length > 0 && (
@@ -103,10 +102,10 @@ export function InsightsFeed({ ws, companyName }: { ws: Workspace; companyName: 
   );
 }
 
-function Section({ label, tone, children }: { label: string; tone: string; children: React.ReactNode }) {
+function Section({ label, accent, children }: { label: string; accent?: boolean; children: React.ReactNode }) {
   return (
-    <div>
-      <dt className={cx("text-xs font-semibold uppercase tracking-wide", tone)}>{label}</dt>
+    <div className={cx("border-l-2 pl-3", accent ? "border-accent" : "border-line")}>
+      <dt className={cx("text-[11px] font-semibold uppercase tracking-wide", accent ? "text-accent" : "text-muted")}>{label}</dt>
       <dd className="mt-0.5 text-sm leading-relaxed">{children}</dd>
     </div>
   );

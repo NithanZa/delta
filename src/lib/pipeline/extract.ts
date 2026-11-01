@@ -208,5 +208,8 @@ export async function runExtraction(
     ),
   );
 
+  if (snapshots.length > 0 && result.processedSnapshotIds.length === 0) {
+    throw new Error("extraction failed for every page (see the log above); nothing to synthesize");
+  }
   return result;
 }
