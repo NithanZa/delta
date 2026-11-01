@@ -23,8 +23,8 @@ Pages become snapshots through one pipeline regardless of origin. A curated, rea
 
 ## Acceptance criteria
 
-- [ ] AC1: `data/corpus/buffer/snapshots/` contains at least 12 snapshot JSON files, each with non-empty `extractedText`, a `publishedAt` date, and a `url` on a real domain.
-- [ ] AC2: At least 3 snapshots share the URL `https://buffer.com/pricing` with different `contentHash` values and `publishedAt` dates falling in each of the three run windows.
-- [ ] AC3: `npm run seed` loads the company, one competitor, 5 research questions and all snapshots; running it twice gives the same counts.
-- [ ] AC4: `createSnapshot` with a live URL (for example a Buffer blog post not in the manifest) produces a row indistinguishable in shape from seeded rows, and a failed fetch throws `FetchError` with a readable message.
-- [ ] AC5: `npm test` and `npm run check` pass.
+- [x] AC1: `data/corpus/buffer/snapshots/` contains at least 12 snapshot JSON files, each with non-empty `extractedText`, a `publishedAt` date, and a `url` on a real domain.
+- [x] AC2: At least 3 snapshots share the URL `https://buffer.com/pricing` with different `contentHash` values and `publishedAt` dates falling in each of the three run windows.
+- [x] AC3: `npm run seed` loads the company, one competitor, 5 research questions and all snapshots; running it twice gives the same counts.
+- [x] AC4: `createSnapshot` with a live URL (for example a Buffer blog post not in the manifest) produces a row indistinguishable in shape from seeded rows, and a failed fetch throws `FetchError` with a readable message.
+- [x] AC5: `npm test` and `npm run check` pass.

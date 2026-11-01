@@ -1,0 +1,9 @@
+{
+  "name": "Loop",
+  "description": "Loop is a social media scheduling and client-reporting tool built for small marketing agencies and freelance social media managers. Founded 2024, 6 people, bootstrapped, ~900 paying workspaces.",
+  "product": "Scheduling across Instagram, LinkedIn, TikTok, Facebook, X and Threads; a client workspace model where each client has its own calendar, approval flow and monthly PDF report; white-label reports; a simple per-workspace price.",
+  "targetCustomers": "Marketing agencies with 2–15 people managing 5–40 client accounts, and freelance social media managers with 3–10 clients. Mostly US/UK/Australia. They care about client approvals, reporting that looks professional, and predictable pricing as they add clients.",
+  "positioning": "The scheduling tool that is organized around clients, not channels. Loop's pitch is 'run every client like a pro without enterprise prices'. Competes with Buffer, Later, SocialPilot and Sendible for agency customers.",
+  "priorities": "1) Win small agencies as the core segment. 2) Keep pricing simple and predictable per client workspace. 3) Ship client approval and white-label reporting improvements. 4) Grow through agency referrals and partnerships rather than paid ads.",
+  "constraints": "Six-person team, two engineers. Cannot match Buffer's channel breadth or integrations. No sales team; self-serve only. Cannot afford a price war."
+}

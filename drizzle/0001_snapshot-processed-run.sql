@@ -1,0 +1,1 @@
+ALTER TABLE `snapshots` ADD `processed_run_id` integer;

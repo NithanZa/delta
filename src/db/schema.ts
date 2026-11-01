@@ -146,6 +146,8 @@ export const snapshots = sqliteTable("snapshots", {
   extractedText: text("extracted_text").notNull(),
   contentHash: text("content_hash").notNull(),
   archiveUrl: text("archive_url"),
+  /** Set once a run has extracted facts from this snapshot (null = pending). */
+  processedRunId: integer("processed_run_id"),
 });
 
 export const runs = sqliteTable("runs", {
