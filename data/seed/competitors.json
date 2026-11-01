@@ -4,5 +4,11 @@
     "slug": "buffer",
     "website": "https://buffer.com",
     "description": "Social media scheduling, analytics and engagement tool. Founded 2010, fully remote, known for transparent pricing and an open culture. Serves creators, small businesses, and agencies with per-channel pricing."
+  },
+  {
+    "name": "SocialPilot",
+    "slug": "socialpilot",
+    "website": "https://www.socialpilot.co",
+    "description": "Social media scheduling and management tool that sells to marketing agencies, SMBs and multi-location brands. Founded 2014, known for low prices per social account, white-label dashboards and reports, and client approval workflows. Plans are tiered by the number of social accounts and users."
   }
 ]

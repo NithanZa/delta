@@ -12,6 +12,7 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "tsx scripts/migrate.ts",
     "seed": "tsx scripts/seed.ts",
+    "seed:competitor": "tsx scripts/seed-competitor.ts",
     "corpus:fetch": "tsx scripts/fetch-corpus.ts",
     "run": "tsx scripts/run.ts",
     "demo:reset": "tsx scripts/demo-reset.ts",
