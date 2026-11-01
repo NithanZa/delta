@@ -17,8 +17,8 @@ The demo is reliable without the network, the repository explains itself to judg
 
 ## Acceptance criteria
 
-- [ ] AC1: `npm run demo:restore && npm run dev` shows all three runs with hypotheses, timeline, insights and questions populated without any API call.
-- [ ] AC2: `npm run demo:fresh` followed by three clicks of "Run" in the UI reproduces the arc with the real API (or fails visibly with a readable error, never a silent hang).
-- [ ] AC3: `docs/stepfun-integration.md` names both models, their roles, and measured token usage per run.
-- [ ] AC4: `README.md` quick start works from a fresh clone of the zip in `dist/`.
-- [ ] AC5: `npm run check`, `npm test`, and `npm run build` pass; the repo is tagged `submission-v1`.
+- [x] AC1: `npm run demo:restore && npm run dev` shows all three runs with hypotheses, timeline, insights and questions populated without any API call.
+- [x] AC2: `npm run demo:fresh` followed by three clicks of "Run" in the UI reproduces the arc with the real API (or fails visibly with a readable error, never a silent hang).
+- [x] AC3: `docs/stepfun-integration.md` names both models, their roles, and measured token usage per run.
+- [x] AC4: `README.md` quick start works from a fresh clone of the zip in `dist/`.
+- [x] AC5: `npm run check`, `npm test`, and `npm run build` pass; the repo is tagged `submission-v1`.
