@@ -32,8 +32,8 @@ The repo has its data layer, StepFun client, test runner and scripts in place. `
 
 ## Acceptance criteria
 
-- [ ] AC1: `npm run check` passes with zero errors.
-- [ ] AC2: `npm test` passes, including the client retry test and the schema insert test.
-- [ ] AC3: `npm run db:push` creates `data/delta.db` with all 12 tables.
-- [ ] AC4: `npx tsx -e` calling `callJson` against the real API with `step-3.7-flash` returns Zod-validated JSON (manual smoke, recorded in the commit message).
-- [ ] AC5: `.env.example` exists and `.env.local` is gitignored.
+- [x] AC1: `npm run check` passes with zero errors.
+- [x] AC2: `npm test` passes, including the client retry test and the schema insert test.
+- [x] AC3: `npm run db:push` creates `data/delta.db` with all 12 tables.
+- [x] AC4: `npx tsx -e` calling `callJson` against the real API with `step-3.7-flash` returns Zod-validated JSON (manual smoke, recorded in the commit message).
+- [x] AC5: `.env.example` exists and `.env.local` is gitignored.
