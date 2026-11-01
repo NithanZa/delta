@@ -48,3 +48,6 @@ next-env.d.ts
 *.db-wal
 *.db-shm
 package-lock.json
+
+# pitch prep stays local
+/docs/pitch-*.md
