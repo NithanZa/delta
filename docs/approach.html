@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Delta — approach & critical path</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#0f1115; --fg:#e7e9ee; --muted:#9aa3b2; --card:#171a21; --line:#262b35; --accent:#4fd1c5; --warn:#f6ad55; --crit:#fc8181; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.55 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 30px; margin: 0 0 6px; } h2 { font-size: 20px; margin: 36px 0 12px; border-bottom:1px solid var(--line); padding-bottom:6px; }
+  .sub { color: var(--muted); margin-bottom: 24px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .card h3 { margin:0 0 6px; font-size:15px; } .card p { margin:0; color:var(--muted); font-size:14px; }
+  .flow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin: 10px 0 4px; }
+  .step { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 12px; font-size:14px; }
+  .step b { color: var(--accent); }
+  .arrow { color: var(--muted); }
+  table { width:100%; border-collapse: collapse; font-size:14px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight:600; }
+  .crit td:first-child { color: var(--crit); font-weight:600; }
+  .tag { display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--muted); margin-right:4px; }
+  .tag.c { border-color: var(--crit); color: var(--crit); }
+  .tag.a { border-color: var(--accent); color: var(--accent); }
+  .cp { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; white-space:pre; overflow-x:auto; }
+  ul { padding-left: 20px; } li { margin: 4px 0; }
+  .ok { color: var(--accent); } .q { color: var(--warn); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Delta — how I'm approaching the build</h1>
+  <div class="sub">StepFun × NYU PMC Case Jam · Track 2 · deadline Sun Nov 1, 4:00 PM ET · written Fri Oct 31, night</div>
+
+  <h2>One sentence</h2>
+  <p>Delta is an AI competitive-intelligence analyst that turns dated public pages into <b>facts with verbatim quotes</b>, connects them into <b>hypotheses that get strengthened, contradicted and revised across runs</b>, and produces <b>company-specific insights and actions</b> — with StepFun doing all the analytical work.</p>
+
+  <h2>The demo story (locked)</h2>
+  <div class="grid">
+    <div class="card"><h3>Your company: “Loop”</h3><p>A small social-media scheduling tool that sells to marketing agencies and freelancers. Priority: win agencies. Constraint: tiny team, cannot match a big roadmap.</p></div>
+    <div class="card"><h3>Competitor: Buffer (real)</h3><p>Public history has an actual reversal on the agency segment — the exact example in the brief, with real, dated, unedited pages.</p></div>
+    <div class="card"><h3>Run 1 · pages ≤ Dec 2023</h3><p>Agency plan exists ($100/mo, 10 channels), agency landing page, support article on new plans. Hypothesis: “Buffer is investing in agencies as a segment and channel.”</p></div>
+    <div class="card"><h3>Run 2 · pages ≤ Dec 2024</h3><p>Agency plan repriced, agency messaging continues, approval workflows. Hypothesis <span class="ok">strengthened</span>; pricing change detected by diffing two snapshots of the same URL.</p></div>
+    <div class="card"><h3>Run 3 · pages ≤ Jan 2026</h3><p>Nov 2025 repricing; Agency plan gone (Dec 2025); FAQ says agencies pay per channel. Hypothesis <span class="q">contradicted → revised</span>: “Buffer consolidated on per-channel simplicity; agencies are served via Team, not a dedicated tier.”</p></div>
+    <div class="card"><h3>Insight for Loop</h3><p>What happened / what it might mean / why it matters to Loop / what to do next — e.g. <i>investigate</i> whether agencies now feel underserved, with interview questions, before any product investment.</p></div>
+  </div>
+
+  <h2>How StepFun is used (the 25% rubric line)</h2>
+  <div class="flow">
+    <span class="step">Snapshot (seeded or live URL)</span><span class="arrow">→</span>
+    <span class="step"><b>step-3.7-flash</b> extract facts + verbatim quotes; diff same-URL snapshots</span><span class="arrow">→</span>
+    <span class="step"><b>step-5-preview</b> (1M ctx) update hypotheses, timeline, strategy profile, open questions</span><span class="arrow">→</span>
+    <span class="step"><b>step-5-preview</b> company-specific insights + respond/investigate actions</span>
+  </div>
+  <ul>
+    <li>Every model call is JSON-mode, validated with Zod, retried once with the validation error. Fabricated quotes are dropped by a verbatim check.</li>
+    <li>The model must cite fact ids for every hypothesis update and insight; user corrections are passed in as authoritative.</li>
+    <li>Nothing downstream can tell a seeded page from a live-fetched one. UI says “Replaying snapshots captured on …”.</li>
+  </ul>
+
+  <h2>Stack</h2>
+  <p>Next.js 16 (App Router, cacheComponents off) · TypeScript · Tailwind v4 · SQLite via Drizzle (one file, zips for submission) · <code>openai</code> SDK pointed at <code>api.stepfun.ai</code> · Readability + jsdom for extraction · Vitest. Local-first, no auth, no deploy.</p>
+
+  <h2>Plan phases (docs/plan/)</h2>
+  <table>
+    <tr><th>Phase</th><th>Delivers</th><th>Est.</th><th>On critical path?</th></tr>
+    <tr class="crit"><td>1 Foundation</td><td>deps, schema (12 tables), StepFun client w/ Zod + mock, test runner</td><td>1.5 h</td><td><span class="tag c">critical</span></td></tr>
+    <tr class="crit"><td>2 Ingestion + corpus</td><td>fetch/readability/snapshot pipeline, SourceProvider, <b>curated real Buffer corpus</b>, seed</td><td>2.5 h</td><td><span class="tag c">critical</span> highest risk: finding the right dated pages</td></tr>
+    <tr class="crit"><td>3 Extraction</td><td>fact extraction + change detection with step-3.7-flash, verbatim check</td><td>1.5 h</td><td><span class="tag c">critical</span></td></tr>
+    <tr class="crit"><td>4 Synthesis + runs</td><td>step-5-preview hypothesis/timeline/profile/insights, run orchestrator, CLI, 3 real replays</td><td>3 h</td><td><span class="tag c">critical</span> second risk: the arc must actually emerge</td></tr>
+    <tr><td>5 UI core</td><td>design system, home, settings, workspace, run panel w/ streaming, overview + timeline</td><td>3 h</td><td><span class="tag a">parallelizable</span> can start after phase 1 schema against mock data</td></tr>
+    <tr><td>6 Insights/evidence/corrections</td><td>insight feed, evidence lists, corrections, add-URL, questions, run detail</td><td>2.5 h</td><td>depends on 4 + 5</td></tr>
+    <tr><td>7 Hardening + submission</td><td>demo DB, resilience, README, StepFun integration doc, demo script, zip</td><td>1.5 h</td><td>depends on 6</td></tr>
+  </table>
+
+  <h2>Critical path analysis</h2>
+  <div class="cp">1 Foundation ──► 2 Ingestion/corpus ──► 3 Extraction ──► 4 Synthesis/runs ──► 6 Insights UI ──► 7 Hardening
+      │                                                                   ▲
+      └──────────────► 5 UI core (overlaps with 2–4, needs only schema) ───┘
+
+Critical path:  1 → 2 → 3 → 4 → 6 → 7   ≈ 12.5 h of work
+Float:          5 has ~3 h float (can be built against mock data while 2–4 run)
+Risk nodes:     2 (corpus curation — real, dated pages with the right arc)
+                4 (the hypothesis arc must emerge from the evidence, not be scripted)
+
+Mitigations:    • Phase 2 fetches pages through Wayback with explicit timestamps, so dates are provable.
+                • Phase 4 step 10 explicitly runs the 3 replays for real and fixes the prompt/corpus if the arc is weak.
+                • Phase 7 ships a pre-computed demo DB, so the demo never depends on the network.
+                • Mock LLM client means every phase has tests that run offline.</div>
+
+  <h2>What I will not do tonight</h2>
+  <ul>
+    <li>Pitch slides and the recorded demo — morning task, using <code>docs/demo-script.md</code> from phase 7.</li>
+    <li>A search provider (Tavily/Exa/Brave) — stubbed behind <code>SourceProvider</code>, not built.</li>
+    <li>Multiple competitors seeded — the schema supports it; the corpus covers Buffer only.</li>
+  </ul>
+
+  <h2>Where I will make a call instead of stopping</h2>
+  <p>Per your instruction I will not stop for minor clarifications. If a plan step disagrees with the code, I will pick the option that keeps the demo arc intact and leave a note in the commit message. I will only stop for a true blocker (API down for an extended period, or the corpus cannot be made to show the arc with real pages).</p>
+</main>
+</body>
+</html>
