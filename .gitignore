@@ -59,6 +59,3 @@ next-env.d.ts
 /data/digests/
 /data/labels/
 /data/backups/
-
-# generated knowledge graph
-/graphify-out/
