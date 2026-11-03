@@ -22,6 +22,62 @@
       "when": 1793498014217,
       "tag": "0002_hypothesis-correction-applied",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793681985431,
+      "tag": "0003_trust-fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793686551623,
+      "tag": "0004_watchlist",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1793689112677,
+      "tag": "0005_jobs",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1793690833996,
+      "tag": "0006_insight-scores",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793693389915,
+      "tag": "0007_digests",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1793699062007,
+      "tag": "0008_discovery",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1793699551485,
+      "tag": "0009_onboarding",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1793731367069,
+      "tag": "0010_usage",
+      "breakpoints": true
     }
   ]
 }

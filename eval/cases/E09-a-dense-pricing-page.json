@@ -1,0 +1,18 @@
+{
+  "id": "E09",
+  "kind": "extract",
+  "description": "A dense pricing page yields several facts and every quote is verbatim (G1 on the case database).",
+  "source": "Existing behaviour; keep green.",
+  "snapshot": {
+    "url": "https://buffer.com/pricing",
+    "sourceType": "pricing",
+    "publishedAt": "2023-06-17",
+    "textFile": "E09-pricing-2023-06-17.txt",
+    "title": "Pricing | Buffer"
+  },
+  "expect": {
+    "facts": {
+      "min": 5
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "id": "E02",
+  "kind": "change",
+  "description": "Monthly display → yearly display of the same prices is not a price change.",
+  "source": "Audit: Buffer pricing 2023-12-01 (billed monthly) vs 2024-08-16 (billed yearly). Green after phase 3.",
+  "previous": {
+    "url": "https://buffer.com/pricing",
+    "sourceType": "pricing",
+    "publishedAt": "2023-12-01",
+    "textFile": "E02-prev-pricing-2023-12-01.txt",
+    "title": "Pricing | Buffer"
+  },
+  "current": {
+    "url": "https://buffer.com/pricing",
+    "sourceType": "pricing",
+    "publishedAt": "2024-08-16",
+    "textFile": "E02-cur-pricing-2024-08-16.txt",
+    "title": "Pricing | Buffer"
+  },
+  "expect": {
+    "changes": {
+      "mustNotInclude": [
+        {
+          "statementMatches": "(price |prices )?(cut|drop|dropped|reduc|lower|decreas|cheaper|slash)"
+        }
+      ]
+    }
+  }
+}

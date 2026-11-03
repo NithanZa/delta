@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DIMENSIONS, FACT_CATEGORIES, HYPOTHESIS_CHANGES, SEVERITIES } from "@/db/schema";
+import { AVAILABILITIES, BILLING_CADENCES, CLAIM_KINDS, DIMENSIONS, FACT_CATEGORIES, HYPOTHESIS_CHANGES, HYPOTHESIS_CLAIM_KINDS, SEVERITIES } from "@/db/schema";
 
 const isoDate = z
   .string()
@@ -12,6 +12,12 @@ export const FactSchema = z.object({
   category: z.enum(FACT_CATEGORIES).catch("other"),
   eventDate: isoDate.nullable().catch(null),
   importance: z.coerce.number().int().min(1).max(5).catch(3),
+  /** null when the fact states no price. */
+  billingCadence: z.enum(BILLING_CADENCES).nullable().catch(null).default(null),
+  /** null when the fact is not about a capability. */
+  availability: z.enum(AVAILABILITIES).nullable().catch(null).default(null),
+  /** Extraction always produces "observed"; absence facts are created by explicit checks (phase 8). */
+  claimKind: z.enum(CLAIM_KINDS).catch("observed").default("observed"),
 });
 export type FactOutput = z.infer<typeof FactSchema>;
 
@@ -50,6 +56,7 @@ export const HypothesisUpdateOutput = z.object({
   /** Only required for created/revised; the code keeps the existing statement otherwise. */
   statement: z.string().catch("").default(""),
   change: z.enum(HYPOTHESIS_CHANGES),
+  claimKind: z.enum(HYPOTHESIS_CLAIM_KINDS).catch("positive").default("positive"),
   /** NaN = keep the existing confidence. */
   confidence: z.coerce.number().min(0).max(1).catch(NaN),
   reasoning: z.string().catch("").default(""),
@@ -80,6 +87,8 @@ export const SynthesisOutput = z.object({
     distribution: ProfileDimensionOutput,
     businessModel: ProfileDimensionOutput,
   }),
+  /** Disagreements between official sources; stored as conflict questions citing both facts. */
+  conflicts: itemsOf(z.object({ question: z.string().min(10), factIds: idList })),
   openQuestions: z
     .object({
       resolved: z
@@ -99,6 +108,13 @@ export const InsightActionOutput = z.object({
 });
 
 export const InsightOutput = z.object({
+  /** Existing insight this one updates (new evidence or a changed recommendation); null for a new topic. */
+  updatesInsightId: idOrNull,
+  /** 1–5: how directly it touches the company's priorities and constraints. */
+  relevance: z.coerce.number().int().min(1).max(5).catch(3),
+  relevanceNote: z.string().catch("").default(""),
+  /** 1–5: how concrete and feasible the recommended action is. */
+  actionability: z.coerce.number().int().min(1).max(5).catch(3),
   title: z.string().min(5),
   whatHappened: z.string().min(10),
   whatItMeans: z.string().min(10),

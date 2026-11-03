@@ -1,0 +1,168 @@
+{
+  "id": "E05m",
+  "kind": "synthesis",
+  "description": "Mock variant of E05: the model emits an absence hypothesis at 0.8; the code must cap it at 0.4 and tag it as an absence claim.",
+  "source": "Phase 3 absence cap, tested deterministically.",
+  "researchQuestions": [
+    "Does Buffer have a partner or affiliate program?"
+  ],
+  "cutoff": "2024-12-31",
+  "state": {
+    "snapshots": [
+      {
+        "key": "agency",
+        "url": "https://buffer.com/agency",
+        "sourceType": "website",
+        "publishedAt": "2024-06-02",
+        "textFile": "E05-agency-page-2024-06-02.txt",
+        "title": "Buffer for Agencies"
+      },
+      {
+        "key": "pricing",
+        "url": "https://buffer.com/pricing",
+        "sourceType": "pricing",
+        "publishedAt": "2024-08-16",
+        "textFile": "E05-pricing-2024-08-16.txt",
+        "title": "Pricing | Buffer"
+      }
+    ],
+    "priorCutoff": "2024-12-31",
+    "priorFacts": [
+      {
+        "key": "f1",
+        "snapshot": "pricing",
+        "statement": "Buffer lists an Agency plan at $100 per month for 10 channels.",
+        "quote": "Agency$100/mo for 10 channels",
+        "category": "pricing",
+        "importance": 4
+      }
+    ],
+    "hypotheses": [
+      {
+        "key": "h1",
+        "dimension": "customers",
+        "statement": "Buffer is investing in agencies as a customer segment.",
+        "confidence": 0.6,
+        "factKeys": [
+          "f1"
+        ]
+      }
+    ],
+    "openQuestions": [
+      "Does Buffer run a partner, affiliate or referral program for agencies?"
+    ],
+    "newFacts": [
+      {
+        "key": "n1",
+        "snapshot": "agency",
+        "statement": "Buffer's agency page says pricing starts at $100 per month with a 14-day free trial.",
+        "quote": "Pricing starts at $100/month and it’s free to try for 14-days.",
+        "category": "pricing",
+        "importance": 3
+      },
+      {
+        "key": "n2",
+        "snapshot": "agency",
+        "statement": "Buffer's agency page offers unlimited user invites and custom access and permissions for collaborating with clients.",
+        "quote": "Work together with your team and your clients with unlimited user invites.",
+        "category": "product",
+        "importance": 3
+      }
+    ]
+  },
+  "mock": {
+    "synthesize": {
+      "timelineEvents": [],
+      "hypothesisUpdates": [
+        {
+          "hypothesisId": null,
+          "dimension": "distribution",
+          "statement": "Buffer does not have a partner or affiliate program for agencies.",
+          "change": "created",
+          "confidence": 0.8,
+          "reasoning": "Neither the agency page nor the pricing page mentions a partner program.",
+          "factIds": [
+            "{{F:0}}",
+            "{{F:1}}"
+          ],
+          "claimKind": "absence"
+        },
+        {
+          "hypothesisId": "{{H:0}}",
+          "dimension": "customers",
+          "statement": "",
+          "change": "strengthened",
+          "confidence": 0.65,
+          "reasoning": "The agency page confirms client collaboration features.",
+          "factIds": [
+            "{{F:1}}"
+          ],
+          "claimKind": "positive"
+        }
+      ],
+      "strategyProfile": {
+        "customers": {
+          "summary": "Agencies and small teams.",
+          "confidence": 0.6,
+          "factIds": [
+            "{{F:1}}"
+          ]
+        },
+        "productDirection": {
+          "summary": "Collaboration for client work.",
+          "confidence": 0.4,
+          "factIds": [
+            "{{F:1}}"
+          ]
+        },
+        "positioning": {
+          "summary": "Simple agency tooling.",
+          "confidence": 0.4,
+          "factIds": [
+            "{{F:0}}"
+          ]
+        },
+        "distribution": {
+          "summary": "Self-serve; no partner program observed.",
+          "confidence": 0.4,
+          "factIds": [
+            "{{F:0}}"
+          ]
+        },
+        "businessModel": {
+          "summary": "Agency plan at $100 for 10 channels.",
+          "confidence": 0.6,
+          "factIds": [
+            "{{F:0}}"
+          ]
+        }
+      },
+      "openQuestions": {
+        "resolved": [],
+        "new": []
+      }
+    }
+  },
+  "expect": {
+    "hypothesisUpdates": {
+      "mustInclude": [
+        {
+          "change": "created",
+          "confidenceMax": 0.4,
+          "claimKind": "absence"
+        }
+      ],
+      "allMatching": [
+        {
+          "where": {
+            "statementMatches": "(no|not have|does not offer|doesn't offer|without|lacks|lack of|absence of|has not launched)[^.]*(partner|affiliate|referral)"
+          },
+          "must": {
+            "confidenceMax": 0.4,
+            "claimKind": "absence"
+          }
+        }
+      ]
+    }
+  }
+}

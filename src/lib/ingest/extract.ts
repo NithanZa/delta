@@ -71,9 +71,25 @@ export function normalizeWhitespace(s: string): string {
     .trim();
 }
 
+const PRICE = /[$€£]\s?\d/g;
+const countPrices = (text: string) => (text.match(PRICE) ?? []).length;
+
 /**
- * Readable text from raw HTML. Falls back to the document body when
- * Readability cannot find an article (pricing pages, landing pages).
+ * Readability looks for an article, so on a pricing or landing page it can
+ * settle on the FAQ and drop the plan table (SocialPilot's plans page kept 0 of
+ * 54 prices). Later captures then hash identically and real price changes read
+ * as "unchanged". Prefer the whole page when Readability lost most of its
+ * prices or most of its text.
+ */
+export function readabilityLostContent(readable: string, body: string): boolean {
+  const bodyPrices = countPrices(body);
+  if (bodyPrices >= 5 && countPrices(readable) < bodyPrices / 2) return true;
+  return body.length >= 1500 && readable.length < body.length * 0.3;
+}
+
+/**
+ * Readable text from raw HTML. Uses the document body when Readability finds
+ * no article or loses most of the page (pricing pages, landing pages).
  */
 export function extractReadable(html: string, url: string): Extracted {
   const virtualConsole = new VirtualConsole(); // silence CSS parse noise from archived pages
@@ -88,12 +104,13 @@ export function extractReadable(html: string, url: string): Extracted {
 
   let text = article?.textContent ?? "";
   let title = article?.title || docTitle;
-  if (normalizeWhitespace(text).length < 500) {
-    // Landing/pricing pages: strip scripts/styles/nav and take the body text instead.
-    for (const el of Array.from(doc.querySelectorAll("script, style, noscript, svg, nav, footer, header, iframe"))) {
-      el.remove();
-    }
-    text = doc.body?.textContent ?? "";
+  // The page without scripts, styles and site chrome.
+  for (const el of Array.from(doc.querySelectorAll("script, style, noscript, svg, nav, footer, header, iframe"))) {
+    el.remove();
+  }
+  const body = doc.body?.textContent ?? "";
+  if (normalizeWhitespace(text).length < 500 || readabilityLostContent(normalizeWhitespace(text), normalizeWhitespace(body))) {
+    text = body;
     title = docTitle || title;
   }
 

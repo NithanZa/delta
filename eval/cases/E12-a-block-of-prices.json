@@ -1,0 +1,34 @@
+{
+  "id": "E12",
+  "kind": "extract",
+  "description": "A block of prices under 'billed annually' yields annual-cadence facts for each price.",
+  "source": "Audit: cadence collapsed. Green after phase 3 (billing_cadence).",
+  "snapshot": {
+    "url": "https://buffer.com/pricing",
+    "sourceType": "pricing",
+    "publishedAt": "2026-10-31",
+    "textFile": "E12-pricing-annual-block.txt",
+    "title": "Plans and pricing"
+  },
+  "expect": {
+    "facts": {
+      "mustInclude": [
+        {
+          "category": "pricing",
+          "billingCadence": "annual",
+          "statementMatches": "\\$5\\b"
+        },
+        {
+          "category": "pricing",
+          "billingCadence": "annual",
+          "statementMatches": "\\$10\\b"
+        },
+        {
+          "category": "pricing",
+          "billingCadence": "annual",
+          "statementMatches": "\\$100\\b"
+        }
+      ]
+    }
+  }
+}

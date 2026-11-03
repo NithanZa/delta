@@ -40,7 +40,7 @@ export default async function RunDetailPage({ params }: { params: Promise<{ slug
       </div>
 
       <Card>
-        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
+        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-10">
           {stat("Pages", run.stats.snapshots)}
           {stat("Facts", run.stats.facts)}
           {stat("Changes", run.stats.changes)}
@@ -48,8 +48,17 @@ export default async function RunDetailPage({ params }: { params: Promise<{ slug
           {stat("Insights", run.stats.insights)}
           {stat("Prompt tokens", run.stats.promptTokens?.toLocaleString())}
           {stat("Completion tokens", run.stats.completionTokens?.toLocaleString())}
+          {stat("Cache reads", run.stats.cacheReadTokens?.toLocaleString())}
+          {stat("Est. cost", run.stats.costUsd == null ? (run.stats.byRole ? "n/a" : undefined) : `$${run.stats.costUsd.toFixed(3)}`)}
           {stat("Wall time", run.stats.wallMs ? `${Math.round(run.stats.wallMs / 1000)}s` : undefined)}
         </dl>
+        {run.stats.models && (
+          <p className="mt-3 text-xs text-muted">
+            Models: {run.stats.models.extract} (extraction) · {run.stats.models.synthesize} (synthesis)
+            {run.stats.byRole?.extract && ` · extraction ${run.stats.byRole.extract.promptTokens.toLocaleString()} in / ${run.stats.byRole.extract.completionTokens.toLocaleString()} out`}
+            {run.stats.byRole?.synthesize && ` · synthesis ${run.stats.byRole.synthesize.promptTokens.toLocaleString()} in / ${run.stats.byRole.synthesize.completionTokens.toLocaleString()} out`}
+          </p>
+        )}
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">

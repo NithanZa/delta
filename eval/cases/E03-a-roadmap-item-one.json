@@ -1,0 +1,28 @@
+{
+  "id": "E03",
+  "kind": "extract",
+  "description": "A roadmap item ('one of the next major releases') must be extracted as coming soon, not as shipped.",
+  "source": "Audit: guest access read as shipped. Green after phase 3 (availability).",
+  "snapshot": {
+    "url": "https://buffer.com/resources/every-team-feature-in-buffer-built-for-agencies/",
+    "sourceType": "blog",
+    "publishedAt": "2026-06-17",
+    "textFile": "E03-agency-blog-2026-06-17.txt",
+    "title": "Every team feature in Buffer, built for agencies"
+  },
+  "expect": {
+    "facts": {
+      "mustInclude": [
+        {
+          "statementMatches": "guest access",
+          "availabilityMatches": "coming_soon|announced"
+        }
+      ],
+      "mustNotInclude": [
+        {
+          "statementMatches": "guest access.*(now available|is available|launched|shipped|has released|released)"
+        }
+      ]
+    }
+  }
+}

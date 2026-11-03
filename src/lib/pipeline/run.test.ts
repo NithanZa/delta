@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { createDb, schema } from "@/db";
 import { hashContent, insertSnapshotRecord } from "@/lib/ingest/snapshot";
-import { MockLlmClient } from "@/lib/stepfun/mock";
-import { nextReplayRun, REPLAY_RUNS } from "./presets";
+import { MockLlmClient } from "@/lib/llm/mock";
+import { nextRun, REPLAY_RUNS } from "./presets";
 import { executeRun, startRun } from "./run";
 
 const page = (plan: string, price: number) =>
@@ -34,7 +34,7 @@ function setup() {
 }
 
 async function runNext(db: ReturnType<typeof createDb>, competitorId: number, client: MockLlmClient) {
-  const run = startRun(db, { competitorId, ...nextReplayRun(db, competitorId) });
+  const run = startRun(db, { competitorId, ...nextRun(db, competitorId) });
   return executeRun(db, run.id, () => {}, client);
 }
 
@@ -62,6 +62,16 @@ describe("executeRun", () => {
     const r2 = await runNext(db, comp.id, client);
     expect(r2.label).toBe("Run 2");
     expect(r2.stats.changes).toBe(1);
+    // The mock updates the insight on record instead of restating it: the old row is superseded and linked.
+    const insightsAfterRun2 = db.select().from(schema.insights).all();
+    const i1 = insightsAfterRun2.find((i) => i.runId === r1.id)!;
+    const i2 = insightsAfterRun2.find((i) => i.runId === r2.id)!;
+    expect(i1.status).toBe("superseded");
+    expect(i2.supersedesInsightId).toBe(i1.id);
+    expect(i2.score).not.toBeNull();
+    expect(i2.scoreBreakdown).toMatchObject({ relevance: 0.8, novelty: 0.5, actionability: 0.6 }); // cites no change fact; the hypothesis moved 0.2
+    expect(i2.relevanceNote).toContain("priority 1");
+    expect(r2.log.some((l) => /supersedes I/.test(l.message))).toBe(true);
     const h2 = db.select().from(schema.hypotheses).where(eq(schema.hypotheses.id, h1[0].id)).get()!;
     expect(h2.status).toBe("strengthened");
     expect(h2.confidence).toBe(0.7);
@@ -89,7 +99,8 @@ describe("executeRun", () => {
     for (const i of db.select().from(schema.insights).all()) expect(i.factIds.every((id) => factIds.has(id))).toBe(true);
 
     // After the presets, the next run is "Run 4" dated today.
-    expect(nextReplayRun(db, comp.id).label).toBe("Run 4");
+    expect(nextRun(db, comp.id)).toMatchObject({ kind: "manual", label: "Run 4" });
+    expect(r1.kind).toBe("replay");
     expect(REPLAY_RUNS).toHaveLength(3);
   });
 
@@ -126,7 +137,7 @@ describe("executeRun", () => {
     expect(db.select().from(schema.insights).all()).toHaveLength(0);
     expect(r.log.at(-1)?.message).toMatch(/\[error\] insights failed/);
     // A failed run does not advance the replay.
-    expect(nextReplayRun(db, comp.id).label).toBe("Run 1");
+    expect(nextRun(db, comp.id).label).toBe("Run 1");
   });
 
   it("drops references to ids the model was not given", async () => {

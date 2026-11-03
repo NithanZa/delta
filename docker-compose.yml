@@ -1,0 +1,57 @@
+# Web app, worker and a TLS reverse proxy on one host. Configuration lives in .env (see docs/deploy.md).
+# SQLite in WAL mode is shared by web and worker through the same host directory.
+services:
+  web:
+    build: .
+    image: delta:latest
+    env_file: .env
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+    volumes:
+      - ./data:/app/data
+    expose:
+      - "3000"
+    restart: unless-stopped
+    init: true
+    # Next drains in-flight requests and pending after() callbacks on SIGTERM.
+    stop_grace_period: 30s
+    healthcheck:
+      # scope=web: is this container up and the database readable? The worker has its own status on /ops.
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health?scope=web').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  worker:
+    image: delta:latest
+    env_file: .env
+    command: ["node", "--import", "tsx", "scripts/worker.ts"]
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+    init: true
+    # SIGTERM lets the current job finish; a longer job is recovered on the next start.
+    stop_grace_period: 60s
+
+  caddy:
+    image: caddy:2
+    env_file: .env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

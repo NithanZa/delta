@@ -1,5 +1,6 @@
 {
   "name": "Loop",
+  "website": "https://loop-social.example",
   "description": "Loop is a social media scheduling and client-reporting tool built for small marketing agencies and freelance social media managers. Founded 2024, 6 people, bootstrapped, ~900 paying workspaces.",
   "product": "Scheduling across Instagram, LinkedIn, TikTok, Facebook, X and Threads; a client workspace model where each client has its own calendar, approval flow and monthly PDF report; white-label reports; a simple per-workspace price.",
   "targetCustomers": "Marketing agencies with 2–15 people managing 5–40 client accounts, and freelance social media managers with 3–10 clients. Mostly US/UK/Australia. They care about client approvals, reporting that looks professional, and predictable pricing as they add clients.",

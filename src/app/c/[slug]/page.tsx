@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { after } from "next/server";
+import { getDb } from "@/db";
+import { recordEvent } from "@/lib/events";
 import { cx, fmtDate } from "@/components/ui";
 import { EvidenceTab } from "@/components/evidence-tab";
 import { InsightsFeed } from "@/components/insights-feed";
 import { Overview } from "@/components/overview";
 import { QuestionsTab } from "@/components/questions-tab";
+import { BackfillPanel } from "@/components/backfill-panel";
 import { RunPanel } from "@/components/run-panel";
 import { Timeline } from "@/components/timeline";
+import { getModelLabels } from "@/lib/llm/config";
 import { getCompany, getCompetitorWorkspace } from "@/lib/queries";
 
 const TABS = [
@@ -25,6 +30,12 @@ export default async function CompetitorPage({ params, searchParams }: { params:
   if (!ws) notFound();
   const company = getCompany();
   const tab: Tab = (TABS.find(([k]) => k === sp.tab)?.[0] ?? "overview") as Tab;
+  // Arrivals through a digest or Slack link count as "viewed" (the funnel's second step).
+  if (sp.via) {
+    const via = sp.via;
+    const competitorId = ws.competitor.id;
+    after(() => recordEvent(getDb(), "insight_viewed", { competitorId, tab, via }));
+  }
   const filterFactIds = sp.facts
     ? sp.facts
         .split(",")
@@ -54,11 +65,17 @@ export default async function CompetitorPage({ params, searchParams }: { params:
             {ws.competitor.description && <> · {ws.competitor.description}</>}
           </p>
         </div>
-        {ws.capturedRange && (
+        {ws.backfilledRange ? (
           <p className="max-w-md rounded-md border border-info/40 px-3 py-1.5 text-xs leading-5 text-info">
-            Replaying {ws.snapshots.length} archived pages published {fmtDate(ws.capturedRange.from)}
-            {ws.capturedRange.from !== ws.capturedRange.to && ` – ${fmtDate(ws.capturedRange.to)}`}. Each run only sees pages dated on or before its cutoff.
+            History backfilled from Wayback captures between {fmtDate(ws.backfilledRange.from)} and {fmtDate(ws.backfilledRange.to)}. Each run only sees pages dated on or before its cutoff.
           </p>
+        ) : (
+          ws.capturedRange && (
+            <p className="max-w-md rounded-md border border-info/40 px-3 py-1.5 text-xs leading-5 text-info">
+              Replaying {ws.snapshots.length} archived pages published {fmtDate(ws.capturedRange.from)}
+              {ws.capturedRange.from !== ws.capturedRange.to && ` – ${fmtDate(ws.capturedRange.to)}`}. Each run only sees pages dated on or before its cutoff.
+            </p>
+          )
         )}
       </div>
 
@@ -70,7 +87,10 @@ export default async function CompetitorPage({ params, searchParams }: { params:
         isRunning={ws.isRunning}
         pendingSnapshots={ws.pendingSnapshots}
         openQuestions={ws.questions_open.length}
+        models={getModelLabels()}
       />
+
+      <BackfillPanel competitorId={ws.competitor.id} slug={slug} activeJobId={ws.activeBackfillJobId} hasWatchlist={ws.sources.some((s) => s.watch && s.enabled)} />
 
       <nav className="flex gap-1 overflow-x-auto border-b border-line" aria-label="Competitor sections">
         {TABS.map(([key, label]) => (

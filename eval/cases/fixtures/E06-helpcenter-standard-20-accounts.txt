@@ -1,0 +1,30 @@
+What's included in each SocialPilot plan?
+Help Center article, updated October 2026
+
+This article lists the limits and features of each SocialPilot plan so you can choose the right one for your team or agency. All plans include a 14-day free trial and can be paid monthly or annually; annual billing saves 15%.
+
+Essentials
+Built for professionals who work independently. The Essentials plan includes 7 social media accounts, 1 user, 500 AI credits per month, the content library, tags, and the publishing calendar. Essentials does not include client management, approval workflows or white-label reports.
+
+Standard
+Designed for SMBs and small teams. The Standard plan includes 20 social media accounts, 3 users, 1,000 AI credits per month, the social inbox, analytics, team collaboration and manager approval workflows. Standard is the most popular plan for small marketing teams that manage their own brands plus one or two clients.
+
+Premium
+Built for growing agencies. The Premium plan includes 30 social media accounts, 6 users, 2,000 AI credits per month, everything in Standard, client approval workflows, advanced reports and white-label PDF reports with your own logo and colors.
+
+Ultimate
+For large agencies. The Ultimate plan includes unlimited social media accounts and unlimited users for a flat $200 per month, 5,000 AI credits, a dedicated account manager, priority support and all Premium features. Ultimate is priced flat rather than per seat, so you can add team members and client accounts without changing your bill.
+
+Counting social media accounts
+Each connected profile counts as one social media account: a Facebook Page, an Instagram Business account, a LinkedIn Page or profile, an X profile, a TikTok account, a YouTube channel, a Pinterest profile, a Google Business Profile or a Threads account. Disconnecting an account frees the slot immediately.
+
+Counting users
+A user is a person who can log in to your SocialPilot workspace. Clients who only review and approve content through the client portal do not count as users on any plan.
+
+AI credits
+AI credits are consumed by AI Pilot when it drafts captions, suggests hashtags or rewrites posts. One credit is one generation. Credits reset on the first day of each billing month and do not roll over.
+
+Changing plans
+You can upgrade at any time; the difference is prorated. Downgrades take effect at the end of the current billing period. If your connected accounts exceed the limit of the new plan, you will be asked to disconnect accounts before the downgrade completes.
+
+Still have questions? Contact support from inside the app or email support at socialpilot.co.

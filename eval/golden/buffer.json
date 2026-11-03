@@ -1,0 +1,12 @@
+{
+  "competitor": "buffer",
+  "events": [
+    { "id": "B01", "date": "2023-06-17", "windowDays": 200, "anyOf": ["agency plan", "$120", "agency$120"], "source": "buffer.com/pricing 2023: Agency plan at $120/month for 10 channels (audit, confirmed)" },
+    { "id": "B02", "date": "2024-06-01", "windowDays": 200, "anyOf": ["threads", "bluesky"], "source": "Buffer added Threads and Bluesky as channels during 2024 (audit recall miss)" },
+    { "id": "B03", "date": "2025-10-17", "windowDays": 120, "anyOf": ["agency plan", "agency tier", "agency$"], "source": "Agency plan no longer on buffer.com/pricing by Oct 2025 (audit, confirmed)" },
+    { "id": "B04", "date": "2025-11-12", "windowDays": 45, "anyOf": ["community"], "source": "Buffer launched Community (comments and DMs inbox) on 2025-11-12 (audit recall miss)" },
+    { "id": "B05", "date": "2025-11-20", "windowDays": 60, "anyOf": ["$4", "$3", "$2", "volume"], "source": "Per-channel volume bands $4/$3/$2 on buffer.com/pricing, Nov 2025 (audit, confirmed)" },
+    { "id": "B06", "date": "2026-05-27", "windowDays": 45, "anyOf": ["api", "mcp", "cli"], "source": "Public Buffer API with MCP server and CLI, 2026-05-27 (audit recall miss)" },
+    { "id": "B07", "date": "2026-06-17", "windowDays": 150, "anyOf": ["25%", "partner program", "agency partner"], "source": "Agency Partner Program with 25% recurring commission, visible by 2026-06-17 (audit, confirmed)" }
+  ]
+}

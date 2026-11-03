@@ -1,0 +1,44 @@
+{
+  "id": "E07",
+  "kind": "change",
+  "description": "A feature line that disappears from a marketing page is 'no longer listed', not discontinued, when a product page for it still exists.",
+  "source": "Audit: page removal read as discontinuation. Green after phase 3 (prompt rule).",
+  "previous": {
+    "url": "https://buffer.com/agency",
+    "sourceType": "website",
+    "publishedAt": "2023-06-03",
+    "textFile": "E07-prev-agency-2023-06-03.txt",
+    "title": "Buffer for Agencies"
+  },
+  "current": {
+    "url": "https://buffer.com/agency",
+    "sourceType": "website",
+    "publishedAt": "2023-11-15",
+    "textFile": "E07-cur-agency-2023-11-15.txt",
+    "title": "Buffer for Agencies"
+  },
+  "extraSnapshots": [
+    {
+      "url": "https://buffer.com/start-page",
+      "sourceType": "website",
+      "publishedAt": "2023-11-15",
+      "textFile": "E07-start-page-product-2023-11-15.txt",
+      "title": "Start Page by Buffer"
+    }
+  ],
+  "expect": {
+    "changes": {
+      "min": 1,
+      "mustInclude": [
+        {
+          "statementMatches": "start page[^.]*(no longer (listed|mentioned|appears|featured)|removed from the agency page|dropped from the page)"
+        }
+      ],
+      "mustNotInclude": [
+        {
+          "statementMatches": "start page[^.]*(discontinued|shut down|sunset|removed the product|killed|retired the product|no longer (offered|available))"
+        }
+      ]
+    }
+  }
+}

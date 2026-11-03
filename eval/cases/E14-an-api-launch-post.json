@@ -1,0 +1,24 @@
+{
+  "id": "E14",
+  "kind": "extract",
+  "description": "An API launch post is a shipped product fact mentioning the API.",
+  "source": "Audit recall miss: Buffer API, MCP server and CLI, 2026-05-27. Requires the availability column from phase 3.",
+  "snapshot": {
+    "url": "https://buffer.com/resources/introducing-the-buffer-api/",
+    "sourceType": "blog",
+    "publishedAt": "2026-05-27",
+    "textFile": "E14-buffer-api-launch-2026-05-27.txt",
+    "title": "Introducing the Buffer API, MCP server and CLI"
+  },
+  "expect": {
+    "facts": {
+      "mustInclude": [
+        {
+          "category": "product",
+          "availability": "shipped",
+          "statementMatches": "\\bAPI\\b"
+        }
+      ]
+    }
+  }
+}

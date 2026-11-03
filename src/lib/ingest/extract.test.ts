@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractReadable, normalizeWhitespace, toIsoDate } from "./extract";
+import { extractReadable, normalizeWhitespace, toIsoDate, readabilityLostContent } from "./extract";
 
 const article = `<!doctype html><html><head>
 <title>How a Small Agency Uses Buffer</title>
@@ -56,5 +56,36 @@ describe("helpers", () => {
     expect(toIsoDate("2024-02-01T00:00:00Z")).toBe("2024-02-01");
     expect(toIsoDate("nope")).toBeNull();
     expect(toIsoDate(null)).toBeNull();
+  });
+});
+
+describe("pricing pages where Readability picks the FAQ", () => {
+  const faq = Array.from({ length: 6 }, (_, i) => `<p>Question ${i}: can I change my plan later? Yes, you can switch your plans or downgrade your subscription anytime you want, and support is available across mail, chat and the mobile app whenever you need it.</p>`).join("");
+  const plans = ["Essentials", "Standard", "Premium", "Ultimate"].map((p, i) => `<div class="plan"><span>${p}</span><span>$${(i + 1) * 25}/mo</span><span>$${(i + 1) * 30} billed monthly</span></div>`).join("");
+
+  it("keeps the plan table instead of only the FAQ", () => {
+    const html = `<html><head><title>Plans | Acme</title></head><body><nav>Home Pricing Login</nav><div id="plans">${plans}</div><article>${faq}</article><footer>Terms</footer></body></html>`;
+    const out = extractReadable(html, "https://acme.example/plans");
+    expect(out.text).toContain("$100/mo");
+    expect(out.text).toContain("Ultimate");
+    expect(out.text).toContain("can I change my plan");
+    expect(out.text).not.toContain("Terms");
+    expect(out.title).toBe("Plans | Acme");
+  });
+
+  it("still uses Readability for articles that mention a price in passing", () => {
+    const paragraphs = Array.from({ length: 8 }, (_, i) => `<p>Paragraph ${i} of a long article about how agencies schedule content for their clients and report the results every month to the people who pay them.</p>`).join("");
+    const html = `<html><head><title>Post</title></head><body><aside>Related: Pricing from $5 a month</aside><article><h1>Post</h1>${paragraphs}</article></body></html>`;
+    const out = extractReadable(html, "https://acme.example/blog/post");
+    expect(out.text).toContain("Paragraph 7");
+    expect(out.text).not.toContain("Related:");
+  });
+
+  it("decides on prices and on lost text", () => {
+    const body = "x".repeat(2000);
+    expect(readabilityLostContent("FAQ only", "$1 $2 $3 $4 $5 and the FAQ")).toBe(true);
+    expect(readabilityLostContent("$1 $2 $3 $4 kept most", "$1 $2 $3 $4 $5 and the FAQ")).toBe(false);
+    expect(readabilityLostContent("y".repeat(500), body)).toBe(true);
+    expect(readabilityLostContent("y".repeat(1500), body)).toBe(false);
   });
 });

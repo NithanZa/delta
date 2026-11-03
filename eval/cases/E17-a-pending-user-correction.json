@@ -1,0 +1,78 @@
+{
+  "id": "E17",
+  "kind": "synthesis",
+  "description": "A pending user correction on a hypothesis must be honoured and acknowledged in the update's reasoning.",
+  "source": "Existing correction path; keep green.",
+  "cutoff": "2026-10-31",
+  "state": {
+    "snapshots": [
+      {
+        "key": "blog",
+        "url": "https://buffer.com/resources/every-team-feature-in-buffer-built-for-agencies/",
+        "sourceType": "blog",
+        "publishedAt": "2026-06-17",
+        "textFile": "E17-agency-blog-2026-06-17.txt",
+        "title": "Every team feature in Buffer, built for agencies"
+      },
+      {
+        "key": "agency",
+        "url": "https://buffer.com/agency",
+        "sourceType": "website",
+        "publishedAt": "2024-06-02",
+        "textFile": "E05-agency-page-2024-06-02.txt",
+        "title": "Buffer for Agencies"
+      }
+    ],
+    "priorCutoff": "2024-12-31",
+    "priorFacts": [
+      {
+        "key": "f1",
+        "snapshot": "agency",
+        "statement": "Buffer's agency page promotes quick, actionable reports for clients.",
+        "quote": "Your clients will love the quick and actionable reports.",
+        "category": "product",
+        "importance": 3
+      }
+    ],
+    "hypotheses": [
+      {
+        "key": "h1",
+        "dimension": "product",
+        "statement": "Buffer's agency push centres on client reporting and white-label analytics.",
+        "confidence": 0.6,
+        "userCorrection": "Our agency customers tell us Buffer's agency pitch is really about client approval workflows and access levels, not reporting. Treat reporting as secondary and approvals as the core of the agency direction.",
+        "factKeys": [
+          "f1"
+        ]
+      }
+    ],
+    "newFacts": [
+      {
+        "key": "n1",
+        "snapshot": "blog",
+        "statement": "Buffer says it is priced per channel, not per seat, so agencies can add team members without the bill changing.",
+        "quote": "Buffer is priced per channel, not per seat, so you can add as many people to the team as you need without the bill changing.",
+        "category": "pricing",
+        "importance": 4
+      },
+      {
+        "key": "n2",
+        "snapshot": "blog",
+        "statement": "Buffer lists guest access, letting clients view and approve content without a full account, as one of the next major releases on its roadmap.",
+        "quote": "Guest access is one of the next major releases on the roadmap.",
+        "category": "product",
+        "importance": 4
+      }
+    ]
+  },
+  "expect": {
+    "hypothesisUpdates": {
+      "min": 1,
+      "mustInclude": [
+        {
+          "reasoningMatches": "approval|correction"
+        }
+      ]
+    }
+  }
+}

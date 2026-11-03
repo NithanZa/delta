@@ -1,0 +1,28 @@
+{
+  "id": "E08",
+  "kind": "change",
+  "description": "Every change statement carries the two capture dates.",
+  "source": "Existing prompt rule; keep green.",
+  "previous": {
+    "url": "https://buffer.com/pricing",
+    "sourceType": "pricing",
+    "publishedAt": "2023-06-17",
+    "textFile": "E08-prev-pricing-2023-06-17.txt",
+    "title": "Pricing | Buffer"
+  },
+  "current": {
+    "url": "https://buffer.com/pricing",
+    "sourceType": "pricing",
+    "publishedAt": "2023-12-01",
+    "textFile": "E08-cur-pricing-2023-12-01.txt",
+    "title": "Pricing | Buffer"
+  },
+  "expect": {
+    "changes": {
+      "min": 1,
+      "allMatch": {
+        "statementMatches": "Between \\d{4}-\\d{2}-\\d{2} and \\d{4}-\\d{2}-\\d{2}"
+      }
+    }
+  }
+}

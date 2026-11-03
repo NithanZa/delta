@@ -1,0 +1,35 @@
+{
+  "id": "E01",
+  "kind": "extract",
+  "description": "Annual and monthly prices for the same plan on one page must become two facts with a billing cadence, never a price cut.",
+  "source": "Ground-truth audit 2026-11-02: annual-vs-monthly read as a price cut. Green after phase 3 (billing_cadence).",
+  "snapshot": {
+    "url": "https://buffer.com/pricing",
+    "sourceType": "pricing",
+    "publishedAt": "2025-12-15",
+    "textFile": "E01-pricing-monthly-vs-yearly.txt",
+    "title": "Pricing | Buffer"
+  },
+  "expect": {
+    "facts": {
+      "min": 2,
+      "mustInclude": [
+        {
+          "category": "pricing",
+          "billingCadence": "annual",
+          "statementMatches": "\\$10"
+        },
+        {
+          "category": "pricing",
+          "billingCadence": "monthly",
+          "statementMatches": "\\$12"
+        }
+      ],
+      "mustNotInclude": [
+        {
+          "statementMatches": "(price )?(cut|drop|reduc|lower|cheaper|discounted from)"
+        }
+      ]
+    }
+  }
+}

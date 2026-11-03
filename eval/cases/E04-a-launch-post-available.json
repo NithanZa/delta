@@ -1,0 +1,24 @@
+{
+  "id": "E04",
+  "kind": "extract",
+  "description": "A launch post ('available now') is a shipped product fact.",
+  "source": "Audit recall miss: Buffer Community 2025-11-12. Requires the availability column from phase 3.",
+  "snapshot": {
+    "url": "https://buffer.com/resources/introducing-community/",
+    "sourceType": "blog",
+    "publishedAt": "2025-11-12",
+    "textFile": "E04-community-launch-2025-11-12.txt",
+    "title": "Introducing Community"
+  },
+  "expect": {
+    "facts": {
+      "mustInclude": [
+        {
+          "statementMatches": "community",
+          "category": "product",
+          "availability": "shipped"
+        }
+      ]
+    }
+  }
+}

@@ -114,8 +114,14 @@ function src(snapshotsById: Map<number, Snapshot>, snapshotId: number): string {
 }
 
 export function formatFact(f: Fact, snapshotsById: Map<number, Snapshot>, full: boolean): string {
-  const tag = f.isChange ? " CHANGE" : "";
-  const head = `F${f.id} [${f.eventDate ?? "?"}] [${f.category}] [importance ${f.importance}]${tag} ${f.statement}`;
+  const tags = [
+    f.isChange ? " CHANGE" : "",
+    f.claimKind === "absence" ? " [ABSENCE CHECK]" : "",
+    f.billingCadence ? ` [cadence ${f.billingCadence}]` : "",
+    f.availability ? ` [availability ${f.availability}]` : "",
+    f.attribution !== "public" ? ` [${f.attribution}]` : "",
+  ].join("");
+  const head = `F${f.id} [${f.eventDate ?? "?"}] [${f.category}] [importance ${f.importance}]${tags} ${f.statement}`;
   if (!full) return head;
   return `${head}\n    quote: "${f.quote}"\n    source: ${src(snapshotsById, f.snapshotId)}`;
 }

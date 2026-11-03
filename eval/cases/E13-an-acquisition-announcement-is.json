@@ -1,0 +1,31 @@
+{
+  "id": "E13",
+  "kind": "extract",
+  "description": "An acquisition announcement is a high-importance fact.",
+  "source": "Audit recall miss: group.one acquires SocialPilot, 2025-07-10. Keep green.",
+  "competitor": {
+    "name": "SocialPilot",
+    "slug": "socialpilot",
+    "website": "https://www.socialpilot.co"
+  },
+  "researchQuestions": [
+    "Who owns SocialPilot and how might that change its strategy?"
+  ],
+  "snapshot": {
+    "url": "https://group.one/press/socialpilot",
+    "sourceType": "news",
+    "publishedAt": "2025-07-10",
+    "textFile": "E13-groupone-acquires-socialpilot-2025-07-10.txt",
+    "title": "group.one acquires SocialPilot"
+  },
+  "expect": {
+    "facts": {
+      "mustInclude": [
+        {
+          "statementMatches": "acqui",
+          "importanceMin": 4
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "competitor": "socialpilot",
+  "events": [
+    { "id": "S01", "date": "2025-07-10", "windowDays": 45, "anyOf": ["group.one", "acquired", "acquisition"], "source": "group.one acquired SocialPilot, announced 2025-07-10 (audit recall miss)" },
+    { "id": "S02", "date": "2026-04-09", "windowDays": 45, "anyOf": ["mcp"], "source": "SocialPilot MCP server, 2026-04-09 (audit recall miss)" },
+    { "id": "S03", "date": "2026-07-14", "windowDays": 200, "anyOf": ["ai pilot"], "source": "AI Assistant renamed AI Pilot (audit, confirmed)" },
+    { "id": "S04", "date": "2026-10-31", "windowDays": 200, "anyOf": ["$200", "ultimate"], "source": "Ultimate tier at a flat $200/month (audit, confirmed)" }
+  ]
+}

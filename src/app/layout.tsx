@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { getModelLabels } from "@/lib/llm/config";
 import { getCompany } from "@/lib/queries";
 import "./globals.css";
 
@@ -16,6 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const company = getCompany();
+  const models = getModelLabels();
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="min-h-screen">
@@ -39,7 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
         <main className="mx-auto max-w-6xl px-5 py-6">{children}</main>
-        <footer className="mx-auto max-w-6xl px-5 py-8 text-xs text-muted">Powered by StepFun step-3.7-flash (extraction) and step-5-preview (synthesis).</footer>
+        <footer className="mx-auto max-w-6xl px-5 py-8 text-xs text-muted">Models: {models.extract} (extraction) · {models.synthesize} (synthesis). Configure with LLM_EXTRACT and LLM_SYNTH.</footer>
       </body>
     </html>
   );

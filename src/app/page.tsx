@@ -9,7 +9,7 @@ export default function Home() {
   if (!company) {
     return (
       <EmptyState title="No company profile yet">
-        Describe your company in <Link href="/settings" className="text-accent underline">Settings</Link> so Delta knows which competitor moves matter. (Developers: <code className="rounded bg-surface-2 px-1">npm run seed</code> loads the demo.)
+        <Link href="/onboarding" className="text-accent underline">Set up Delta from your website</Link> (two URLs and a few questions), or describe your company in <Link href="/settings" className="text-accent underline">Settings</Link>. (Developers: <code className="rounded bg-surface-2 px-1">npm run seed</code> loads the demo.)
       </EmptyState>
     );
   }

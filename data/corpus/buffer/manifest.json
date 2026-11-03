@@ -10,28 +10,32 @@
     "sourceType": "website",
     "publishedAt": "2023-06-03",
     "archiveTimestamp": "20230603023430",
-    "note": "Run 1. 'Buffer for Agencies' landing page as captured by the Wayback Machine in June 2023."
+    "note": "Run 1. 'Buffer for Agencies' landing page as captured by the Wayback Machine in June 2023.",
+    "watch": true
   },
   {
     "url": "https://buffer.com/pricing",
     "sourceType": "pricing",
     "publishedAt": "2023-06-17",
     "archiveTimestamp": "20230617041020",
-    "note": "Run 1. Pricing page with the Agency plan at $120/month for 10 channels (+$6 per extra channel)."
+    "note": "Run 1. Pricing page with the Agency plan at $120/month for 10 channels (+$6 per extra channel).",
+    "watch": true
   },
   {
     "url": "https://support.buffer.com/article/595-features-available-on-each-buffer-plan",
     "sourceType": "docs",
     "publishedAt": "2023-12-11",
     "archiveTimestamp": "20231211224402",
-    "note": "Run 1. Feature comparison table including the Agency column (Wayback capture, Dec 2023)."
+    "note": "Run 1. Feature comparison table including the Agency column (Wayback capture, Dec 2023).",
+    "watch": true
   },
   {
     "url": "https://buffer.com/pricing",
     "sourceType": "pricing",
     "publishedAt": "2023-12-01",
     "archiveTimestamp": "20231201141439",
-    "note": "Run 1. Second pricing capture; Agency plan unchanged at $120."
+    "note": "Run 1. Second pricing capture; Agency plan unchanged at $120.",
+    "watch": true
   },
   {
     "url": "https://joel.is/notes/Legacy_to_New_Buffer_MRR_transition_during_2023/",
@@ -44,35 +48,40 @@
     "sourceType": "website",
     "publishedAt": "2024-06-02",
     "archiveTimestamp": "20240602000708",
-    "note": "Run 2. Agency landing page a year later."
+    "note": "Run 2. Agency landing page a year later.",
+    "watch": true
   },
   {
     "url": "https://support.buffer.com/article/667-using-buffer-as-an-agency",
     "sourceType": "docs",
     "publishedAt": "2024-06-19",
     "archiveTimestamp": "20240619165331",
-    "note": "Run 2. Support article recommending the Agency plan for 11+ channels."
+    "note": "Run 2. Support article recommending the Agency plan for 11+ channels.",
+    "watch": true
   },
   {
     "url": "https://buffer.com/pricing",
     "sourceType": "pricing",
     "publishedAt": "2024-08-16",
     "archiveTimestamp": "20240816040242",
-    "note": "Run 2. Pricing after the mid-2024 cut: Agency $100/month (annual) / $120 monthly; Team $10/$12; Essentials $5/$6."
+    "note": "Run 2. Pricing after the mid-2024 cut: Agency $100/month (annual) / $120 monthly; Team $10/$12; Essentials $5/$6.",
+    "watch": true
   },
   {
     "url": "https://buffer.com/pricing",
     "sourceType": "pricing",
     "publishedAt": "2025-10-17",
     "archiveTimestamp": "20251017180848",
-    "note": "Run 3. Agency plan no longer listed; Free / Essentials / Team only; FAQ still says 'last updated in August 2021'."
+    "note": "Run 3. Agency plan no longer listed; Free / Essentials / Team only; FAQ still says 'last updated in August 2021'.",
+    "watch": true
   },
   {
     "url": "https://buffer.com/pricing",
     "sourceType": "pricing",
     "publishedAt": "2025-12-15",
     "archiveTimestamp": "20251215061342",
-    "note": "Run 3. FAQ now says 'Our pricing was last updated in November 2025'."
+    "note": "Run 3. FAQ now says 'Our pricing was last updated in November 2025'.",
+    "watch": true
   },
   {
     "url": "https://buffer.com/resources/how-this-agency-uses-buffer-to-manage-30-social-accounts/",
@@ -96,24 +105,28 @@
     "url": "https://buffer.com/agency",
     "sourceType": "website",
     "publishedAt": "2026-10-31",
-    "note": "Run 3. Live agency landing page: 'pay for channels, not seats', Team plan, client approvals, Agency Partner Program."
+    "note": "Run 3. Live agency landing page: 'pay for channels, not seats', Team plan, client approvals, Agency Partner Program.",
+    "watch": true
   },
   {
     "url": "https://support.buffer.com/article/667-using-buffer-as-an-agency",
     "sourceType": "docs",
     "publishedAt": "2026-10-31",
-    "note": "Run 3. Live version of the agency support article: Essentials/Team only, no Agency plan mention."
+    "note": "Run 3. Live version of the agency support article: Essentials/Team only, no Agency plan mention.",
+    "watch": true
   },
   {
     "url": "https://support.buffer.com/article/595-features-available-on-each-buffer-plan",
     "sourceType": "docs",
     "publishedAt": "2026-10-31",
-    "note": "Run 3. Live feature comparison table."
+    "note": "Run 3. Live feature comparison table.",
+    "watch": true
   },
   {
     "url": "https://buffer.com/pricing",
     "sourceType": "pricing",
     "publishedAt": "2026-10-31",
-    "note": "Run 3. Live pricing page."
+    "note": "Run 3. Live pricing page.",
+    "watch": true
   }
 ]

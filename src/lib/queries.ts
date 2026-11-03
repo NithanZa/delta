@@ -2,9 +2,11 @@ import "server-only";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { schema } from "@/db";
-import type { Fact, Hypothesis, HypothesisChange, HypothesisUpdate, OpenQuestion, Run, Snapshot } from "@/db/schema";
+import type { Fact, Hypothesis, HypothesisChange, HypothesisUpdate, Insight, OpenQuestion, Run, Snapshot } from "@/db/schema";
 import { HYPOTHESIS_CHANGES } from "@/db/schema";
-import { nextReplayRun } from "@/lib/pipeline/presets";
+import { buildDigestContent, periodSincePreviousRun, type DigestContent } from "@/lib/digest/content";
+import { nextRun } from "@/lib/pipeline/presets";
+import { reactionsFor } from "@/lib/reactions";
 
 export function getCompany() {
   return getDb().select().from(schema.company).get() ?? null;
@@ -21,7 +23,8 @@ export function listCompetitors() {
       const runs = db.select().from(schema.runs).where(eq(schema.runs.competitorId, c.id)).orderBy(desc(schema.runs.id)).all();
       const insightCount = db.select({ n: sql<number>`count(*)` }).from(schema.insights).where(eq(schema.insights.competitorId, c.id)).get()?.n ?? 0;
       const snapshotCount = db.select({ n: sql<number>`count(*)` }).from(schema.snapshots).where(eq(schema.snapshots.competitorId, c.id)).get()?.n ?? 0;
-      return { ...c, runCount: runs.filter((r) => r.status === "done").length, lastRun: runs[0] ?? null, insightCount, snapshotCount };
+      const research = runs.filter((r) => r.kind !== "check");
+      return { ...c, runCount: research.filter((r) => r.status === "done").length, lastRun: research[0] ?? null, insightCount, snapshotCount };
     });
 }
 
@@ -29,11 +32,47 @@ export function getCompetitorBySlug(slug: string) {
   return getDb().select().from(schema.competitors).where(eq(schema.competitors.slug, slug)).get() ?? null;
 }
 
+/** Every known page of a competitor with its watch settings; watched first. */
+/** Insights still on record (not superseded or dismissed), highest score first. */
+export function listActiveInsights(competitorId: number) {
+  return getDb()
+    .select()
+    .from(schema.insights)
+    .where(and(eq(schema.insights.competitorId, competitorId), inArray(schema.insights.status, ["new", "acknowledged"])))
+    .all()
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0) || b.id - a.id);
+}
+
+/** Earlier insights an insight replaced, newest first, following supersedesInsightId. */
+export function insightChain(insights: Insight[], head: Insight): Insight[] {
+  const byId = new Map(insights.map((i) => [i.id, i]));
+  const chain: Insight[] = [];
+  let cur = head.supersedesInsightId ? byId.get(head.supersedesInsightId) : undefined;
+  while (cur && chain.length < 20) {
+    chain.push(cur);
+    cur = cur.supersedesInsightId ? byId.get(cur.supersedesInsightId) : undefined;
+  }
+  return chain;
+}
+
+export function listWatchlist(competitorId: number) {
+  return getDb().select().from(schema.sources).where(eq(schema.sources.competitorId, competitorId)).orderBy(desc(schema.sources.watch), asc(schema.sources.url)).all();
+}
+
+export function listFeeds(competitorId: number) {
+  return getDb().select().from(schema.feeds).where(eq(schema.feeds.competitorId, competitorId)).orderBy(asc(schema.feeds.id)).all();
+}
+
 export function listQuestions(competitorId: number) {
   return getDb().select().from(schema.researchQuestions).where(eq(schema.researchQuestions.competitorId, competitorId)).orderBy(asc(schema.researchQuestions.id)).all();
 }
 
-export type HypothesisWithHistory = Hypothesis & { history: HypothesisUpdate[]; supersededBy: Hypothesis | null };
+export type HypothesisWithHistory = Hypothesis & {
+  history: HypothesisUpdate[];
+  supersededBy: Hypothesis | null;
+  /** For absence claims: the latest update cites a fact produced by an explicit absence check. */
+  absenceVerified: boolean;
+};
 
 export type RunDeltaRow = { update: HypothesisUpdate; hypothesis: HypothesisWithHistory; supersedes: Hypothesis | null };
 export type Trajectory = { hypothesis: HypothesisWithHistory; points: { run: Run; confidence: number | null }[] };
@@ -112,6 +151,7 @@ export function getCompetitorWorkspace(slug: string) {
 
   const runs = db.select().from(schema.runs).where(eq(schema.runs.competitorId, cid)).orderBy(desc(schema.runs.id)).all();
   const snapshots = db.select().from(schema.snapshots).where(eq(schema.snapshots.competitorId, cid)).orderBy(asc(schema.snapshots.publishedAt), asc(schema.snapshots.id)).all();
+  const sources = db.select().from(schema.sources).where(eq(schema.sources.competitorId, cid)).all();
   const facts = db.select().from(schema.facts).where(eq(schema.facts.competitorId, cid)).orderBy(asc(schema.facts.id)).all();
 
   const allHypotheses = db.select().from(schema.hypotheses).where(eq(schema.hypotheses.competitorId, cid)).orderBy(asc(schema.hypotheses.id)).all();
@@ -123,17 +163,34 @@ export function getCompetitorWorkspace(slug: string) {
         .orderBy(asc(schema.hypothesisUpdates.id))
         .all()
     : [];
-  const hypotheses: HypothesisWithHistory[] = allHypotheses.map((h) => ({
-    ...h,
-    history: updates.filter((u) => u.hypothesisId === h.id),
-    supersededBy: allHypotheses.find((o) => o.supersedesId === h.id) ?? null,
-  }));
+  const absenceFactIds = new Set(facts.filter((f) => f.claimKind === "absence").map((f) => f.id));
+  const hypotheses: HypothesisWithHistory[] = allHypotheses.map((h) => {
+    const history = updates.filter((u) => u.hypothesisId === h.id);
+    const latest = history[history.length - 1];
+    return {
+      ...h,
+      history,
+      supersededBy: allHypotheses.find((o) => o.supersedesId === h.id) ?? null,
+      absenceVerified: h.claimKind === "absence" && Boolean(latest?.factIds.some((id) => absenceFactIds.has(id))),
+    };
+  });
 
   const profile = db.select().from(schema.strategyProfiles).where(eq(schema.strategyProfiles.competitorId, cid)).orderBy(desc(schema.strategyProfiles.id)).get() ?? null;
   const timeline = db.select().from(schema.timelineEvents).where(eq(schema.timelineEvents.competitorId, cid)).orderBy(asc(schema.timelineEvents.eventDate), asc(schema.timelineEvents.id)).all();
   const insights = db.select().from(schema.insights).where(eq(schema.insights.competitorId, cid)).orderBy(desc(schema.insights.runId), asc(schema.insights.id)).all();
   const questions = db.select().from(schema.openQuestions).where(eq(schema.openQuestions.competitorId, cid)).orderBy(asc(schema.openQuestions.id)).all();
 
+  const reactions = reactionsFor(db, insights.map((i) => i.id));
+  const absenceChecks = db.select().from(schema.absenceChecks).where(eq(schema.absenceChecks.competitorId, cid)).orderBy(desc(schema.absenceChecks.id)).all();
+  const activeBackfillJob = db
+    .select()
+    .from(schema.jobs)
+    .where(and(eq(schema.jobs.kind, "backfill"), eq(schema.jobs.competitorId, cid)))
+    .orderBy(desc(schema.jobs.id))
+    .get();
+  const backfilled = snapshots.filter((s) => sources.find((src) => src.id === s.sourceId)?.provider === "backfill").map((s) => s.publishedAt).sort();
+  const sincePeriod = periodSincePreviousRun(db, cid);
+  const sinceDigest: DigestContent | null = sincePeriod ? buildDigestContent(db, sincePeriod, { competitorIds: [cid] }) : null;
   const publishedDates = snapshots.map((s) => s.publishedAt.slice(0, 10)).sort();
   const capturedRange = publishedDates.length ? { from: publishedDates[0], to: publishedDates[publishedDates.length - 1] } : null;
 
@@ -142,6 +199,7 @@ export function getCompetitorWorkspace(slug: string) {
     questions: listQuestions(cid),
     runs,
     snapshots,
+    sources,
     facts,
     hypotheses,
     profile,
@@ -149,10 +207,15 @@ export function getCompetitorWorkspace(slug: string) {
     insights,
     questions_open: questions.filter((q) => q.status === "open"),
     questions_resolved: questions.filter((q) => q.status === "resolved"),
-    nextRun: nextReplayRun(db, cid),
+    nextRun: nextRun(db, cid),
     isRunning: runs.some((r) => r.status === "running" || r.status === "queued"),
     pendingSnapshots: snapshots.filter((s) => s.processedRunId === null).length,
     capturedRange,
+    sinceDigest,
+    reactions,
+    absenceChecks,
+    activeBackfillJobId: activeBackfillJob && (activeBackfillJob.status === "queued" || activeBackfillJob.status === "running") ? activeBackfillJob.id : null,
+    backfilledRange: backfilled.length ? { from: backfilled[0], to: backfilled[backfilled.length - 1] } : null,
     latestRunDelta: buildRunDelta({
       runs,
       hypotheses,

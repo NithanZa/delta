@@ -4,52 +4,60 @@
     "sourceType": "website",
     "publishedAt": "2022-05-19",
     "archiveTimestamp": "20220519161050",
-    "note": "Run 1. 'Social Media Marketing Tool for Agencies' landing page (Wayback, May 2022): white-labeled dashboard, branded analytics reports, client management."
+    "note": "Run 1. 'Social Media Marketing Tool for Agencies' landing page (Wayback, May 2022): white-labeled dashboard, branded analytics reports, client management.",
+    "watch": true
   },
   {
     "url": "https://www.socialpilot.co/plans",
     "sourceType": "pricing",
     "publishedAt": "2022-11-28",
     "archiveTimestamp": "20221128212731",
-    "note": "Run 1. Plans & Pricing (Wayback, Nov 2022): six tiers from $35 to $200/month priced by social accounts, Agency/Agency+ with white label."
+    "note": "Run 1. Plans & Pricing (Wayback, Nov 2022): six tiers from $35 to $200/month priced by social accounts, Agency/Agency+ with white label.",
+    "watch": true
   },
   {
     "url": "https://www.socialpilot.co/plans",
     "sourceType": "pricing",
     "publishedAt": "2023-06-05",
     "archiveTimestamp": "20230605013227",
-    "note": "Run 1. Plans & Pricing seven months later (Wayback, Jun 2023): line-up consolidated; $50 / $100 / $200 tiers with 15%-off annual billing."
+    "note": "Run 1. Plans & Pricing seven months later (Wayback, Jun 2023): line-up consolidated; $50 / $100 / $200 tiers with 15%-off annual billing.",
+    "watch": true
   },
   {
     "url": "https://www.socialpilot.co/solutions/agencies",
     "sourceType": "website",
     "publishedAt": "2024-08-30",
     "archiveTimestamp": "20240830120456",
-    "note": "Run 2. Agency landing page two years on (Wayback, Aug 2024): 'Social Media Marketing Software for Agencies'."
+    "note": "Run 2. Agency landing page two years on (Wayback, Aug 2024): 'Social Media Marketing Software for Agencies'.",
+    "watch": true
   },
   {
     "url": "https://www.socialpilot.co/plans",
     "sourceType": "pricing",
     "publishedAt": "2025-01-08",
     "archiveTimestamp": "20250108224104",
-    "note": "Run 3. Plans & Pricing (Wayback, Jan 2025): repackaged Essentials / Standard / Premium / Ultimate tiers, Premium 'built for growing agencies', AI credits, client approval and white-label reports gated by tier."
+    "note": "Run 3. Plans & Pricing (Wayback, Jan 2025): repackaged Essentials / Standard / Premium / Ultimate tiers, Premium 'built for growing agencies', AI credits, client approval and white-label reports gated by tier.",
+    "watch": true
   },
   {
     "url": "https://www.socialpilot.co/blog/agency-pricing-flat-rate-vs-per-seat",
     "sourceType": "blog",
     "publishedAt": "2026-07-14",
-    "note": "Run 3. SocialPilot post 'Scale Without Pay-Per-Account Limits' (published 2026-07-14) arguing flat-rate agency pricing against per-account / per-seat models."
+    "note": "Run 3. SocialPilot post 'Scale Without Pay-Per-Account Limits' (published 2026-07-14) arguing flat-rate agency pricing against per-account / per-seat models.",
+    "watch": true
   },
   {
     "url": "https://www.socialpilot.co/solutions/agencies",
     "sourceType": "website",
     "publishedAt": "2026-10-31",
-    "note": "Run 3. Live agency landing page."
+    "note": "Run 3. Live agency landing page.",
+    "watch": true
   },
   {
     "url": "https://www.socialpilot.co/plans",
     "sourceType": "pricing",
     "publishedAt": "2026-10-31",
-    "note": "Run 3. Live Plans & Pricing page."
+    "note": "Run 3. Live Plans & Pricing page.",
+    "watch": true
   }
 ]

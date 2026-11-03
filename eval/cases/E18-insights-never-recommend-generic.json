@@ -1,0 +1,83 @@
+{
+  "id": "E18",
+  "kind": "insights",
+  "description": "Insights never recommend generic monitoring.",
+  "source": "Existing insights prompt rule; keep green.",
+  "cutoff": "2026-10-31",
+  "state": {
+    "snapshots": [
+      {
+        "key": "agency",
+        "url": "https://buffer.com/agency",
+        "sourceType": "website",
+        "publishedAt": "2026-10-31",
+        "textFile": "E18-agency-page-2026-10-31.txt",
+        "title": "Buffer for Agencies"
+      },
+      {
+        "key": "pricing",
+        "url": "https://buffer.com/pricing",
+        "sourceType": "pricing",
+        "publishedAt": "2026-10-31",
+        "textFile": "E18-pricing-2026-10-31.txt",
+        "title": "Pricing | Buffer"
+      }
+    ],
+    "priorCutoff": "2026-10-31",
+    "priorFacts": [
+      {
+        "key": "f1",
+        "snapshot": "pricing",
+        "statement": "Buffer's Team plan is $10 per channel per month, $120 billed yearly.",
+        "quote": "1 channel $120 billed yearly (save 2 months)",
+        "category": "pricing",
+        "importance": 3
+      }
+    ],
+    "hypotheses": [
+      {
+        "key": "h1",
+        "dimension": "customers",
+        "statement": "Buffer is investing in agencies as a customer segment.",
+        "confidence": 0.7,
+        "factKeys": [
+          "f1"
+        ]
+      }
+    ],
+    "openQuestions": [
+      "Does Buffer have a partner program for agencies?"
+    ],
+    "newFacts": [
+      {
+        "key": "n1",
+        "snapshot": "agency",
+        "statement": "Buffer's Agency Partner Program pays a 25% recurring commission on new clients brought through a referral link.",
+        "quote": "Earn 25% recurring commission on new clients you bring to Buffer through your referral link.",
+        "category": "distribution",
+        "importance": 5
+      },
+      {
+        "key": "n2",
+        "snapshot": "pricing",
+        "statement": "Buffer's pricing page positions per-channel pricing for solo creators through to multi-brand agencies.",
+        "quote": "For solo creators through to multi-brand agencies.",
+        "category": "messaging",
+        "importance": 3
+      }
+    ]
+  },
+  "expect": {
+    "insights": {
+      "min": 1,
+      "mustNotInclude": [
+        {
+          "actionsTextMatches": "keep monitoring|continue to monitor|stay aware|monitor closely|keep an eye"
+        },
+        {
+          "whatToDoNextMatches": "keep monitoring|continue to monitor|stay aware|monitor closely|keep an eye"
+        }
+      ]
+    }
+  }
+}

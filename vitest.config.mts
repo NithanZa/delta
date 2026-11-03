@@ -6,7 +6,7 @@ export default defineConfig({
     alias: { "@": path.resolve(__dirname, "src") },
   },
   test: {
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "eval/**/*.test.ts"],
     env: { DELTA_MOCK_LLM: "1", DELTA_DB_PATH: ":memory:" },
   },
 });

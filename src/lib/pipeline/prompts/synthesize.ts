@@ -19,12 +19,28 @@ You will receive (1) the company context and research questions, (2) everything 
 - Strategy profile: produce the CURRENT best understanding across ALL facts to date (not only new ones) for customers, productDirection, positioning, distribution, businessModel. Each with a 1–3 sentence summary, confidence, and supporting fact ids.
 - Open questions: resolve an existing question (by id) only when the facts answer it; add new questions for important uncertainties that a future run should investigate (be concrete: which page or signal would answer it).
 
+## Absence claims
+- Every hypothesis update carries "claimKind": "positive" (the competitor does or has X) or "absence" (the competitor lacks X, has no X, does not offer X).
+- A page not mentioning something is not evidence of absence. An absence claim may only exceed confidence 0.4 when it cites a fact tagged [ABSENCE CHECK] produced by an explicit check of the relevant pages. Without such a fact, keep the confidence at or below 0.4, or state the gap as an open question instead ("Does ${ctx.competitor.name} run a partner program? Check /partners, /affiliates and the footer.").
+
+## Conflicts between sources
+- When two official sources disagree on a number, a limit, a price or an entitlement, do NOT choose one. Emit a "conflicts" item with a precise question and BOTH fact ids, and make the strategy profile mention both values. Do not create a hypothesis that one value is current.
+- First check whether the two values differ only by billing cadence (monthly vs annual), by date (an older capture vs a newer one of the same page), or by plan. Those are not conflicts.
+
+## Internal intelligence
+- Facts tagged [internal:<sender>] are what ${ctx.company.name}'s own people told Delta. They are authoritative about ${ctx.company.name} itself and its customers. About ${ctx.competitor.name} they are unverified claims: they may raise an open question or move a hypothesis by at most 0.1, must be cited as "per <sender> (internal)" in reasoning, and must never be stated as ${ctx.competitor.name}'s public behaviour or placed on the timeline as a public event.
+
+## Availability and time windows
+- A hypothesis that a capability exists must cite facts with [availability shipped]. Facts marked coming_soon, announced or beta support only statements about plans and roadmap ("plans to", "announced"), never about availability.
+- Prices must be stated with their billing cadence when the facts give one. Never say a price was cut when the only difference between two facts is the cadence.
+- Claims that something changed between two dates must cite captures on both sides of the window (the earlier state and the later state).
+
 ${formatCompanyContext(ctx)}
 
 Respond with JSON only, exactly this shape:
 {
   "timelineEvents": [{"eventDate":"YYYY-MM-DD","title":"...","summary":"...","factIds":[1,2],"relatedEventIds":[]}],
-  "hypothesisUpdates": [{"hypothesisId": null | 3, "dimension":"customers","statement":"...","change":"created|strengthened|weakened|contradicted|revised|retired","confidence":0.55,"reasoning":"...","factIds":[1,2]}],
+  "hypothesisUpdates": [{"hypothesisId": null | 3, "dimension":"customers","statement":"...","change":"created|strengthened|weakened|contradicted|revised|retired","claimKind":"positive|absence","confidence":0.55,"reasoning":"...","factIds":[1,2]}],
   "strategyProfile": {
     "customers": {"summary":"...","confidence":0.5,"factIds":[]},
     "productDirection": {"summary":"...","confidence":0.5,"factIds":[]},
@@ -32,6 +48,7 @@ Respond with JSON only, exactly this shape:
     "distribution": {"summary":"...","confidence":0.5,"factIds":[]},
     "businessModel": {"summary":"...","confidence":0.5,"factIds":[]}
   },
+  "conflicts": [{"question":"Which Standard plan limit is current: 15 accounts (plans page) or 20 (help center)?","factIds":[4,9]}],
   "openQuestions": {"resolved":[{"id":2,"resolution":"..."}],"new":[{"question":"..."}]}
 }`;
 }

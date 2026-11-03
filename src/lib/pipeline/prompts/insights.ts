@@ -1,4 +1,4 @@
-import type { Fact, Hypothesis, HypothesisUpdate, Run, Snapshot, TimelineEvent } from "@/db/schema";
+import type { Fact, Hypothesis, HypothesisUpdate, Insight, Run, Snapshot, TimelineEvent } from "@/db/schema";
 import { formatCompanyContext, type CompanyContext } from "../context";
 import { formatNewFacts } from "../state";
 
@@ -17,11 +17,23 @@ export function insightsSystemPrompt(ctx: CompanyContext): string {
 - Cite the hypothesis ids and fact ids (numbers only) the insight rests on. Never cite ids you were not given.
 - "severity": high = affects a stated priority or threatens the core segment; medium = worth a decision this quarter; low = monitor.
 - Be concrete and brief. No generic advice ("keep monitoring competitors").
+- When "whatHappened" mentions a price, state its billing cadence (monthly or annual) as given in the facts. When a capability is marked coming_soon, announced or beta, write "plans to" or "announced", never "launched" or "offers". Never assert that the competitor lacks something unless a fact tagged [ABSENCE CHECK] is cited.
+
+## Internal intelligence
+- Facts tagged [internal:<sender>] came from ${name}'s own people. Use them freely for "whyItMatters" and "whatToDoNext" (they are authoritative about ${name}); in "whatHappened" always write "per <sender> (internal)" and never present them as the competitor's public behaviour.
+
+## Existing insights
+- You are given the insights already on record (I<id>). If a new insight would restate one of them and cites no new change facts, do NOT emit it.
+- Emit it with "updatesInsightId" set to that id only when there is new evidence or a changed recommendation; the old insight is then replaced by yours. Use null for a genuinely new topic.
+
+## Ratings
+- "relevance": 1–5, how directly the insight touches ${name}'s stated priorities or constraints. "relevanceNote": name the priority or constraint it touches, quoting its text (e.g. "priority 1: win small agencies").
+- "actionability": 1–5, how concrete and feasible the recommended action is for a team of ${name}'s size.
 
 ${formatCompanyContext(ctx)}
 
 Respond with JSON only:
-{"insights":[{"title":"...","whatHappened":"...","whatItMeans":"...","whyItMatters":"...","whatToDoNext":"...","severity":"high|medium|low","hypothesisIds":[1],"factIds":[2,3],"actions":[{"type":"respond|investigate","text":"...","rationale":"..."}]}]}`;
+{"insights":[{"updatesInsightId":null|12,"relevance":1-5,"relevanceNote":"...","actionability":1-5,"title":"...","whatHappened":"...","whatItMeans":"...","whyItMatters":"...","whatToDoNext":"...","severity":"high|medium|low","hypothesisIds":[1],"factIds":[2,3],"actions":[{"type":"respond|investigate","text":"...","rationale":"..."}]}]}`;
 }
 
 export type InsightsInput = {
@@ -31,7 +43,11 @@ export type InsightsInput = {
   newEvents: TimelineEvent[];
   newFacts: Fact[];
   snapshotsById: Map<number, Snapshot>;
+  /** Active insights from earlier runs (status new or acknowledged). */
+  priorInsights?: Pick<Insight, "id" | "title" | "hypothesisIds" | "severity" | "runId">[];
 };
+
+export const PRIOR_INSIGHTS_MARKER = "## Insights already on record (reference as updatesInsightId)";
 
 export function insightsUserPrompt(input: InsightsInput): string {
   const byHyp = new Map<number, HypothesisUpdate>();
@@ -45,6 +61,10 @@ export function insightsUserPrompt(input: InsightsInput): string {
     if (h.supersedesId) out.push(`    (revises H${h.supersedesId})`);
     if (h.userCorrection) out.push(`    user correction: ${h.userCorrection}`);
   }
+  out.push("", PRIOR_INSIGHTS_MARKER);
+  const prior = input.priorInsights ?? [];
+  if (prior.length === 0) out.push("(none)");
+  for (const i of prior) out.push(`I${i.id} [${i.severity}] [run ${i.runId}] [hypotheses ${i.hypothesisIds.map((h) => `H${h}`).join(", ") || "none"}] ${i.title}`);
   out.push("", "## New timeline events this run");
   if (input.newEvents.length === 0) out.push("(none)");
   for (const e of input.newEvents) out.push(`E${e.id} [${e.eventDate}] ${e.title} — ${e.summary}`);

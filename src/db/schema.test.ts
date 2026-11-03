@@ -17,6 +17,15 @@ describe("schema", () => {
         "competitors",
         "research_questions",
         "sources",
+        "feeds",
+        "absence_checks",
+        "settings",
+        "jobs",
+        "digests",
+        "digest_items",
+        "reactions",
+        "events",
+        "inbound_messages",
         "snapshots",
         "runs",
         "facts",
@@ -26,11 +35,15 @@ describe("schema", () => {
         "strategy_profiles",
         "insights",
         "open_questions",
+        "usage_events",
       ].sort(),
     );
 
-    db.insert(s.company).values({ name: "Loop" }).run();
+    db.insert(s.company).values({ name: "Loop", website: "https://loop.example", onboarding: { draftedAt: "2026-11-03T00:00:00.000Z", sourceUrls: ["https://loop.example"], questions: [] } }).run();
+    expect(db.select().from(s.company).get()?.onboarding?.sourceUrls).toEqual(["https://loop.example"]);
     const [comp] = db.insert(s.competitors).values({ name: "Buffer", slug: "buffer" }).returning().all();
+    expect(comp.profile).toBeNull();
+    expect(comp.emphasis).toBe("");
     db.insert(s.researchQuestions).values({ competitorId: comp.id, text: "Are they investing in agencies?" }).run();
     const [src] = db
       .insert(s.sources)
@@ -116,9 +129,48 @@ describe("schema", () => {
     const storedRun = db.select().from(s.runs).get();
     expect(storedRun?.log).toEqual([]);
     expect(storedRun?.status).toBe("queued");
+    expect(storedRun?.kind).toBe("manual");
+    db.insert(s.settings).values({ key: "schedule.runCron", value: "0 5 * * MON" }).run();
+    expect(db.select().from(s.settings).get()?.value).toBe("0 5 * * MON");
+    db.insert(s.jobs).values({ kind: "run", competitorId: comp.id, requestedBy: "ui" }).run();
+    const [digest] = db
+      .insert(s.digests)
+      .values({ sequence: 1, periodStart: "2026-11-01T00:00:00.000Z", periodEnd: "2026-11-08T00:00:00.000Z", subject: "Delta weekly", html: "<p>x</p>", text: "x", content: { quiet: false } })
+      .returning()
+      .all();
+    const [insight] = db.select().from(s.insights).all();
+    db.insert(s.digestItems).values({ digestId: digest.id, competitorId: comp.id, insightId: insight.id, rank: 1 }).run();
+    db.insert(s.reactions).values({ insightId: insight.id, digestId: digest.id, kind: "useful", source: "email" }).run();
+    expect(() => db.insert(s.reactions).values({ insightId: insight.id, digestId: digest.id, kind: "useful", source: "email" }).run()).toThrow();
+    db.insert(s.events).values({ name: "digest_sent", props: { digestId: digest.id } }).run();
+    db.insert(s.inboundMessages).values({ providerEmailId: "em_1", fromEmail: "pm@partner.com", toEmail: "delta+d1@delta.example.com", receivedAt: "2026-11-08T09:00:00.000Z" }).run();
+    expect(db.select().from(s.digests).get()?.status).toBe("draft");
+    expect(db.select().from(s.inboundMessages).get()?.status).toBe("received");
+    const storedJob = db.select().from(s.jobs).get();
+    expect(storedJob?.status).toBe("queued");
+    expect(storedJob?.payload).toEqual({});
     const storedInsight = db.select().from(s.insights).get();
     expect(storedInsight?.actions[0].type).toBe("investigate");
+    expect(storedInsight?.score).toBeNull();
+    expect(storedInsight?.supersedesInsightId).toBeNull();
+    db.insert(s.feeds).values({ competitorId: comp.id, url: "https://buffer.com/resources/feed", kind: "rss" }).run();
+    const storedFeed = db.select().from(s.feeds).get();
+    expect(storedFeed?.enabled).toBe(true);
+    const storedSource = db.select().from(s.sources).get();
+    expect(storedSource?.watch).toBe(false);
+    expect(storedSource?.discoveryQuery).toBeNull();
+    db.insert(s.absenceChecks).values({ competitorId: comp.id, topic: "partner_program", result: "not_found", queries: ["q"], urlsChecked: ["https://buffer.com/partners"] }).run();
+    expect(db.select().from(s.absenceChecks).get()?.result).toBe("not_found");
+    expect(storedSource?.checkIntervalHours).toBe(168);
     const storedFact = db.select().from(s.facts).get();
     expect(storedFact?.isChange).toBe(false);
+    expect(storedFact?.claimKind).toBe("observed");
+    expect(storedFact?.billingCadence).toBeNull();
+    expect(storedFact?.availability).toBeNull();
+    expect(storedFact?.attribution).toBe("public");
+    expect(db.select().from(s.hypotheses).get()?.claimKind).toBe("positive");
+    const storedQuestion = db.select().from(s.openQuestions).get();
+    expect(storedQuestion?.kind).toBe("investigation");
+    expect(storedQuestion?.factIds).toEqual([]);
   });
 });

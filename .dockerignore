@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.github
+data/*.db
+data/*.db-*
+data/backups
+data/digests
+.env*
+!.env.example
+dist
+docs/screenshots
+eval/results/regress-*.json
+*.tsbuildinfo

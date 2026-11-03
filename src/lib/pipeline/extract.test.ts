@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { createDb, schema } from "@/db";
-import { MockLlmClient } from "@/lib/stepfun/mock";
+import { MockLlmClient } from "@/lib/llm/mock";
 import { hashContent, insertSnapshotRecord } from "@/lib/ingest/snapshot";
 import { loadCompanyContext } from "./context";
 import type { RunEvent } from "./events";

@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -47,10 +48,17 @@ next-env.d.ts
 /dist
 *.db-wal
 *.db-shm
-package-lock.json
 
 # pitch prep stays local
 /docs/pitch-*.md
 
 # demo video workspace (recordings, Remotion project, DB copies)
 /demo-video/
+
+# digest previews, scratch databases, operator data
+/data/digests/
+/data/labels/
+/data/backups/
+
+# generated knowledge graph
+/graphify-out/

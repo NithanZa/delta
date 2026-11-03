@@ -5,6 +5,7 @@ import { EvidenceList } from "@/components/evidence-list";
 import { CorrectionForm } from "@/components/correction-form";
 import { linkRefs } from "@/components/refs";
 import { RunDelta } from "@/components/run-delta";
+import { SinceStrip } from "@/components/since-strip";
 import { correctHypothesis } from "@/app/c/[slug]/actions";
 import type { HypothesisWithHistory, Workspace } from "@/lib/queries";
 import { factMap, snapshotMap } from "@/lib/queries";
@@ -46,6 +47,11 @@ export function Overview({ ws }: { ws: Workspace }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.25fr]">
+      {ws.sinceDigest && ws.sinceDigest.competitors[0] && (
+        <div className="lg:col-span-2">
+          <SinceStrip slug={ws.competitor.slug} content={ws.sinceDigest} />
+        </div>
+      )}
       {ws.latestRunDelta && (
         <div className="lg:col-span-2">
           <RunDelta ws={ws} delta={ws.latestRunDelta} />
@@ -119,6 +125,8 @@ export function HypothesisCard({
       <div className="flex flex-wrap items-center gap-1.5">
         <Badge>{dimensionLabel[h.dimension]}</Badge>
         <Badge tone={statusTone[h.status]}>{h.status}</Badge>
+        {h.claimKind === "absence" && (h.absenceVerified ? <Badge tone="neutral">absence claim · checked</Badge> : <Badge tone="warn">absence claim · unverified</Badge>)}
+        {h.claimKind === "absence" && (h.absenceVerified ? <Badge tone="neutral">absence claim · checked</Badge> : <Badge tone="warn">absence claim · unverified</Badge>)}
         {h.userCorrection && <Badge tone="accent">{h.correctionAppliedRunId === null ? "corrected by you · applied next run" : `corrected by you · applied in ${runLabel(ws.runs, h.correctionAppliedRunId)}`}</Badge>}
         <span className="ml-auto text-xs text-muted">
           H{h.id} · updated in {runLabel(ws.runs, h.updatedRunId)}

@@ -1,0 +1,20 @@
+Introducing Community: manage comments and messages across every channel in one inbox
+Published November 12, 2025 by the Buffer team
+
+Today we are launching Community, a new part of Buffer that brings the comments and direct messages from all of your connected channels into one place. Community is available now to every Buffer customer, and it is included at no extra cost: it is free for up to three channels on the Free plan and included on every paid plan for every channel you connect.
+
+Why we built Community
+For years Buffer has helped people and small businesses plan and publish content. But publishing is only half the job. The replies, questions and mentions that follow a post are where relationships form, and most small teams were switching between five apps to keep up. We heard it in hundreds of conversations: "I can schedule everything in Buffer, but then I spend my evening inside each network answering comments."
+
+What Community does
+Community collects comments on your posts and messages sent to your profiles from Instagram, Facebook, LinkedIn, Threads, Bluesky, Mastodon, Pinterest, TikTok and YouTube. You see them in a single stream, ordered by time, with the post they relate to right beside them. You can reply, like, hide or assign a conversation to a teammate without leaving Buffer. Saved replies let you answer common questions in one click, and smart suggestions highlight the conversations most likely to need a human answer first.
+
+Who can use it
+Community is live today for all customers. On the Free plan you can use Community with up to three channels. Essentials and Team customers get Community for every channel in their workspace, and Team customers also get assignment, internal notes and saved replies shared across the team. There is nothing to install and no waitlist. Open Buffer, click Community in the sidebar and connect the channels you want to manage.
+
+What is next
+We are already working on a mobile experience for Community so you can reply on the go, and on reporting that shows response times by channel. Both are on the public roadmap and we will share dates as soon as we have them.
+
+Pricing has not changed with this launch. Buffer is still priced per channel: $5 per channel per month on Essentials and $10 per channel per month on Team when billed yearly, with a free plan for up to three channels.
+
+We would love to hear what you think. Reply to this post from inside Community, naturally, and tell us what you would like to see next.

@@ -9,8 +9,9 @@ import path from "node:path";
 import { createDb, schema } from "@/db";
 import { wipeAll } from "@/db/admin";
 import { env } from "@/lib/env";
-import { corpusDir } from "@/lib/ingest/providers";
+import { applyWatchFlags, corpusDir } from "@/lib/ingest/providers";
 import { insertSnapshotRecord, type SnapshotRecord } from "@/lib/ingest/snapshot";
+import { domainFromWebsite } from "@/lib/ingest/watchlist";
 
 type SeedCompany = typeof schema.company.$inferInsert;
 type SeedCompetitor = { name: string; slug: string; website: string; description: string };
@@ -32,7 +33,7 @@ function main() {
   let questionCount = 0;
 
   for (const c of competitors) {
-    const row = db.insert(schema.competitors).values(c).returning().get();
+    const row = db.insert(schema.competitors).values({ ...c, domain: domainFromWebsite(c.website) }).returning().get();
     for (const q of questions[c.slug] ?? []) {
       db.insert(schema.researchQuestions).values({ competitorId: row.id, text: q }).run();
       questionCount++;
@@ -44,6 +45,7 @@ function main() {
       const { created } = insertSnapshotRecord(db, row.id, rec);
       if (created) snapshotCount++;
     }
+    applyWatchFlags(db, row.id, c.slug);
   }
 
   console.log(`Seeded ${env.dbPath}: company=${company.name}, competitors=${competitors.length}, questions=${questionCount}, snapshots=${snapshotCount}`);

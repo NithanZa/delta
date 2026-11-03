@@ -1,14 +1,24 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type { Db } from "@/db";
 import { schema } from "@/db";
-import type { Fact, Hypothesis, HypothesisUpdate, Insight, OpenQuestion, Run, StrategyProfile, TimelineEvent } from "@/db/schema";
-import { callJson, MODELS, type LlmClient, type LlmUsage } from "@/lib/stepfun/client";
+import type { Fact, Hypothesis, HypothesisClaimKind, HypothesisUpdate, Insight, OpenQuestion, Run, StrategyProfile, TimelineEvent } from "@/db/schema";
+import { callJson, type LlmClient, type LlmUsage } from "@/lib/llm/client";
 import type { CompanyContext } from "./context";
 import type { OnEvent } from "./events";
+import { assertPointInTime } from "./guards";
+import { evidenceOf, findSupersededInsight, fingerprint, noveltyOf, scoreInsight } from "./rank";
 import { InsightsOutput, SynthesisOutput } from "./schemas";
+import { InsightsWire, SynthesisWire } from "./wire";
 import { loadResearchState, type ResearchState } from "./state";
 import { synthesizeSystemPrompt, synthesizeUserPrompt } from "./prompts/synthesize";
 import { insightsSystemPrompt, insightsUserPrompt } from "./prompts/insights";
+
+/** An absence claim without an explicit absence check never exceeds this confidence. */
+export const ABSENCE_CAP = 0.4;
+/** A hypothesis move supported only by internal (partner-supplied) facts is limited to this much. */
+export const INTERNAL_MAX_MOVE = 0.1;
+/** A hypothesis created from internal facts alone starts no higher than this. */
+export const INTERNAL_CREATED_CAP = 0.5;
 
 export type SynthesisResult = {
   timelineEvents: TimelineEvent[];
@@ -36,9 +46,11 @@ export async function runSynthesis(
   onEvent: OnEvent,
   client?: LlmClient,
 ): Promise<SynthesisResult> {
+  assertPointInTime(run, state, newFacts);
   const res = await callJson({
     task: "synthesize",
-    model: MODELS.deep,
+    role: "synthesize",
+    wire: SynthesisWire,
     system: synthesizeSystemPrompt(ctx),
     user: synthesizeUserPrompt(run, state, newFacts),
     schema: SynthesisOutput,
@@ -48,6 +60,8 @@ export async function runSynthesis(
   const out = res.data;
 
   const knownFactIds = new Set<number>([...state.priorFacts.map((f) => f.id), ...newFacts.map((f) => f.id)]);
+  const absenceFactIds = new Set<number>([...state.priorFacts, ...newFacts].filter((f) => f.claimKind === "absence").map((f) => f.id));
+  const internalFactIds = new Set<number>([...state.priorFacts, ...newFacts].filter((f) => f.attribution !== "public").map((f) => f.id));
   const activeHyps = new Map(state.hypotheses.map((h) => [h.id, h]));
   const eventIds = new Set(state.timeline.map((e) => e.id));
 
@@ -79,6 +93,30 @@ export async function runSynthesis(
     const factIds = validIds(u.factIds, knownFactIds, onEvent, "fact");
     const existing = u.hypothesisId !== null ? activeHyps.get(u.hypothesisId) : undefined;
     const reasoning = u.reasoning || "(no reasoning given)";
+    const claimKind: HypothesisClaimKind = u.claimKind === "absence" || existing?.claimKind === "absence" ? "absence" : "positive";
+    // Absence claims need an explicit check behind them; a page not mentioning something proves nothing.
+    const internalOnly = factIds.length > 0 && factIds.every((id) => internalFactIds.has(id));
+    const capAbsence = (c: number, label: string) => {
+      let v = c;
+      if (claimKind === "absence" && v > ABSENCE_CAP && !factIds.some((id) => absenceFactIds.has(id))) {
+        warn(`${label}: absence claim without an absence check; confidence capped at ${ABSENCE_CAP} (model proposed ${v.toFixed(2)})`);
+        v = ABSENCE_CAP;
+      }
+      // Partner-supplied claims about the competitor are unverified: small moves only.
+      if (internalOnly) {
+        if (existing) {
+          const limited = Math.max(existing.confidence - INTERNAL_MAX_MOVE, Math.min(existing.confidence + INTERNAL_MAX_MOVE, v));
+          if (limited !== v) {
+            warn(`${label}: cited facts are internal only; move limited to ±${INTERNAL_MAX_MOVE} (model proposed ${v.toFixed(2)}, stored ${limited.toFixed(2)})`);
+            v = limited;
+          }
+        } else if (v > INTERNAL_CREATED_CAP) {
+          warn(`${label}: created from internal facts only; confidence capped at ${INTERNAL_CREATED_CAP} (model proposed ${v.toFixed(2)})`);
+          v = INTERNAL_CREATED_CAP;
+        }
+      }
+      return v;
+    };
     // A model may emit "created" with an existing id, or several updates for one hypothesis; keep state consistent.
     let change = u.change === "created" && existing ? "strengthened" : u.change;
     if (existing && touched.has(existing.id)) {
@@ -92,7 +130,7 @@ export async function runSynthesis(
         warn(`Dropped a new hypothesis without a statement`);
         continue;
       }
-      const confidence = Number.isFinite(u.confidence) ? u.confidence : 0.5;
+      const confidence = capAbsence(Number.isFinite(u.confidence) ? u.confidence : 0.5, "new hypothesis");
       const row = db
         .insert(schema.hypotheses)
         .values({
@@ -100,6 +138,7 @@ export async function runSynthesis(
           dimension: u.dimension ?? "next_moves",
           statement: u.statement.trim(),
           confidence,
+          claimKind,
           status: "active",
           createdRunId: run.id,
           updatedRunId: run.id,
@@ -121,7 +160,7 @@ export async function runSynthesis(
       warn(`Dropped a "${change}" update for unknown hypothesis ${u.hypothesisId}`);
       continue;
     }
-    const confidence = Number.isFinite(u.confidence) ? u.confidence : existing.confidence;
+    const confidence = capAbsence(Number.isFinite(u.confidence) ? u.confidence : existing.confidence, `H${existing.id}`);
 
     if (change === "revised" && !statementOk) {
       warn(`H${existing.id}: "revised" without a new statement; recorded as "contradicted" instead`);
@@ -144,6 +183,7 @@ export async function runSynthesis(
           dimension: u.dimension ?? existing.dimension,
           statement: u.statement.trim(),
           confidence,
+          claimKind,
           status: "revised",
           createdRunId: run.id,
           updatedRunId: run.id,
@@ -220,6 +260,32 @@ export async function runSynthesis(
     db.insert(schema.openQuestions).values({ competitorId: run.competitorId, createdRunId: run.id, question: q.question }).returning().get(),
   );
 
+  // Conflicts between official sources become questions that cite both sides; never silently resolved.
+  const openConflicts = db
+    .select()
+    .from(schema.openQuestions)
+    .where(and(eq(schema.openQuestions.competitorId, run.competitorId), eq(schema.openQuestions.status, "open"), eq(schema.openQuestions.kind, "conflict")))
+    .all();
+  const conflictKeys = new Set(openConflicts.map((q) => [...q.factIds].sort((a, b) => a - b).join(",")));
+  let conflictsDeduped = 0;
+  for (const c of out.conflicts) {
+    const ids = validIds(c.factIds, knownFactIds, onEvent, "fact").sort((a, b) => a - b);
+    if (ids.length < 2) {
+      warn(`Dropped a conflict that does not cite two facts: ${c.question.slice(0, 80)}`);
+      continue;
+    }
+    const key = ids.join(",");
+    if (conflictKeys.has(key)) {
+      conflictsDeduped++;
+      continue;
+    }
+    conflictKeys.add(key);
+    questionsNew.push(
+      db.insert(schema.openQuestions).values({ competitorId: run.competitorId, createdRunId: run.id, question: c.question, kind: "conflict", factIds: ids }).returning().get(),
+    );
+  }
+  if (conflictsDeduped) warn(`Ignored ${conflictsDeduped} conflict(s) already open for the same facts`);
+
   // Corrections acknowledged by an update this run are marked applied; pending ones are reported.
   for (const h of state.hypotheses) {
     if (!h.userCorrection || h.correctionAppliedRunId !== null) continue;
@@ -252,9 +318,17 @@ export async function runInsights(
   onEvent: OnEvent,
   client?: LlmClient,
 ): Promise<{ insights: Insight[]; usage: LlmUsage }> {
+  assertPointInTime(run, state, newFacts);
+  // Insights still on record: the model may update one (new evidence) instead of restating it.
+  const activeInsights = db
+    .select()
+    .from(schema.insights)
+    .where(and(eq(schema.insights.competitorId, run.competitorId), inArray(schema.insights.status, ["new", "acknowledged"])))
+    .all();
   const res = await callJson({
     task: "generate_insights",
-    model: MODELS.deep,
+    role: "synthesize",
+    wire: InsightsWire,
     system: insightsSystemPrompt(ctx),
     user: insightsUserPrompt({
       run,
@@ -263,6 +337,7 @@ export async function runInsights(
       newEvents: synthesis.timelineEvents,
       newFacts,
       snapshotsById: state.snapshotsById,
+      priorInsights: activeInsights,
     }),
     schema: InsightsOutput,
     maxTokens: 8_000,
@@ -271,8 +346,26 @@ export async function runInsights(
 
   const knownFactIds = new Set<number>([...state.priorFacts.map((f) => f.id), ...newFacts.map((f) => f.id)]);
   const knownHypIds = new Set(synthesis.hypotheses.map((h) => h.id));
-  const insights = res.data.insights.map((i) =>
-    db
+  const factsById = new Map([...state.priorFacts, ...newFacts].map((f) => [f.id, f]));
+  const hypById = new Map(synthesis.hypotheses.map((h) => [h.id, h]));
+  // Largest confidence move per hypothesis this run (a created hypothesis counts as a full move).
+  const moves = new Map<number, number>();
+  for (const u of synthesis.hypothesisUpdates) moves.set(u.hypothesisId, Math.max(moves.get(u.hypothesisId) ?? 0, u.prevConfidence === null ? 1 : Math.abs(u.newConfidence - u.prevConfidence)));
+  const remaining = [...activeInsights];
+  let superseded = 0;
+  const insights = res.data.insights.map((i) => {
+    const hypothesisIds = validIds(i.hypothesisIds, knownHypIds, onEvent, "hypothesis");
+    const factIds = validIds(i.factIds, knownFactIds, onEvent, "fact");
+    const replaces = findSupersededInsight({ title: i.title, hypothesisIds, updatesInsightId: i.updatesInsightId }, remaining);
+    const citedFacts = factIds.map((id) => factsById.get(id)).filter((f): f is Fact => Boolean(f));
+    const citedHyps = hypothesisIds.map((id) => hypById.get(id)).filter((h): h is Hypothesis => Boolean(h));
+    const novelty = noveltyOf({
+      isNew: !replaces,
+      citesChange: citedFacts.some((f) => f.isChange),
+      maxHypothesisMove: Math.max(0, ...hypothesisIds.map((id) => moves.get(id) ?? 0)),
+    });
+    const { score, breakdown } = scoreInsight({ relevance: i.relevance, actionability: i.actionability, novelty, evidence: evidenceOf(citedFacts, citedHyps) });
+    const row = db
       .insert(schema.insights)
       .values({
         competitorId: run.competitorId,
@@ -283,13 +376,30 @@ export async function runInsights(
         whyItMatters: i.whyItMatters,
         whatToDoNext: i.whatToDoNext,
         severity: i.severity,
-        hypothesisIds: validIds(i.hypothesisIds, knownHypIds, onEvent, "hypothesis"),
-        factIds: validIds(i.factIds, knownFactIds, onEvent, "fact"),
+        hypothesisIds,
+        factIds,
         actions: i.actions,
+        score,
+        scoreBreakdown: breakdown,
+        relevanceNote: i.relevanceNote.trim() || null,
+        actionability: i.actionability,
+        supersedesInsightId: replaces?.id ?? null,
+        fingerprint: fingerprint(hypothesisIds, i.title),
       })
       .returning()
-      .get(),
-  );
-  onEvent({ stage: "insights", message: `${insights.length} insight(s) for ${ctx.company.name}`, data: { insights: insights.length } });
+      .get();
+    if (replaces) {
+      db.update(schema.insights).set({ status: "superseded" }).where(eq(schema.insights.id, replaces.id)).run();
+      remaining.splice(remaining.findIndex((r) => r.id === replaces.id), 1);
+      superseded++;
+      onEvent({ stage: "insights", message: `I${row.id} supersedes I${replaces.id} ("${replaces.title.slice(0, 60)}")` });
+    }
+    return row;
+  });
+  onEvent({
+    stage: "insights",
+    message: `${insights.length} insight(s) for ${ctx.company.name}${superseded ? `, ${superseded} replacing earlier ones` : ""}`,
+    data: { insights: insights.length, superseded },
+  });
   return { insights, usage: res.usage };
 }

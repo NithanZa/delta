@@ -17,7 +17,11 @@ export type FetchPageOptions = {
 
 export type FetchedPage = { html: string; finalUrl: string; archiveUrl: string | null; fetchedAt: string };
 
-const USER_AGENT = "Mozilla/5.0 (compatible; DeltaResearchBot/0.1; +https://github.com/delta)";
+import { env } from "@/lib/env";
+import { assertPublicHttpUrl } from "./safeUrl";
+
+/** Identifies the crawler; the linked page explains what it does and how to reach us. */
+export const USER_AGENT = `Mozilla/5.0 (compatible; DeltaResearchBot/0.2; +${env.baseUrl}/about-bot)`;
 const MIN_HTML_CHARS = 500;
 
 export function archiveUrlFor(url: string, timestamp: string): string {
@@ -27,6 +31,11 @@ export function archiveUrlFor(url: string, timestamp: string): string {
 
 /** Fetch a page (live or archived) and return its HTML. Throws FetchError with a readable message. */
 export async function fetchPage(url: string, opts: FetchPageOptions = {}): Promise<FetchedPage> {
+  try {
+    assertPublicHttpUrl(url);
+  } catch (e) {
+    throw new FetchError(`Refused to fetch ${url}: ${(e as Error).message}`, url);
+  }
   const fetchImpl = opts.fetchImpl ?? fetch;
   const archiveUrl = opts.archiveTimestamp ? archiveUrlFor(url, opts.archiveTimestamp) : null;
   const target = archiveUrl ?? url;

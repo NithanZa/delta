@@ -1,0 +1,33 @@
+{
+  "id": "E11",
+  "kind": "change",
+  "description": "Between captures the Agency plan is gone and volume bands appear: one change about the plan no longer being listed, one about the $4/$3/$2 bands.",
+  "source": "Audit: Agency plan removal (2025) and volume bands (Nov 2025). Keep green.",
+  "previous": {
+    "url": "https://buffer.com/pricing",
+    "sourceType": "pricing",
+    "publishedAt": "2024-08-16",
+    "textFile": "E11-prev-pricing-2024-08-16.txt",
+    "title": "Pricing | Buffer"
+  },
+  "current": {
+    "url": "https://buffer.com/pricing",
+    "sourceType": "pricing",
+    "publishedAt": "2025-11-20",
+    "textFile": "E11-cur-pricing-2025-11-20-bands.txt",
+    "title": "Pricing | Buffer"
+  },
+  "expect": {
+    "changes": {
+      "min": 2,
+      "mustInclude": [
+        {
+          "statementMatches": "agency[^.]*(no longer|removed|gone|not listed|disappear|dropped)"
+        },
+        {
+          "statementMatches": "\\$4|\\$3|\\$2|volume"
+        }
+      ]
+    }
+  }
+}

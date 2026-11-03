@@ -1,0 +1,26 @@
+{
+  "id": "E15",
+  "kind": "extract",
+  "description": "An affiliate program page yields a distribution/partnership fact with the commission rate.",
+  "source": "Audit: affiliate page existed while 'no partner program' was asserted. Keep green.",
+  "snapshot": {
+    "url": "https://buffer.com/affiliates",
+    "sourceType": "website",
+    "publishedAt": "2026-10-31",
+    "textFile": "E15-affiliate-program.txt",
+    "title": "Buffer Affiliate Program"
+  },
+  "expect": {
+    "facts": {
+      "mustInclude": [
+        {
+          "categoryMatches": "distribution|partnership",
+          "statementMatches": "20%"
+        },
+        {
+          "statementMatches": "affiliate"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{$DELTA_HOST} {
+	# Public: signed reaction links, provider webhooks, health, the crawler's contact page and the static assets it needs.
+	@public path /r/* /api/health /about-bot /_next/static/* /favicon.ico
+	handle @public {
+		reverse_proxy web:3000
+	}
+
+	# Everything else is behind a password. flush_interval -1 keeps the NDJSON run stream unbuffered.
+	handle {
+		basic_auth {
+			{$DELTA_BASIC_USER} {$DELTA_BASIC_HASH}
+		}
+		reverse_proxy web:3000 {
+			flush_interval -1
+		}
+	}
+}

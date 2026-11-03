@@ -13,9 +13,7 @@ const out = path.join(root, "dist", "delta-submission.zip");
 fs.mkdirSync(path.dirname(out), { recursive: true });
 if (fs.existsSync(out)) fs.rmSync(out);
 
-// package-lock.json is excluded on purpose: npm's lockfile loses better-sqlite3's `gypfile: false`
-// and then tries to compile it with node-gyp on a fresh install (needs Visual Studio / Xcode).
-const exclude = ["node_modules", ".next", "dist", ".env.local", ".git", "package-lock.json", "tsconfig.tsbuildinfo", "data/delta.db", "data/delta.db-wal", "data/delta.db-shm"];
+const exclude = ["node_modules", ".next", "dist", ".env.local", ".git", "tsconfig.tsbuildinfo", "data/delta.db", "data/delta.db-wal", "data/delta.db-shm"];
 
 function walk(dir: string, rel = ""): string[] {
   const files: string[] = [];

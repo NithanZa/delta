@@ -1,0 +1,25 @@
+Introducing the Buffer API, MCP server and CLI: build on Buffer with your own tools and AI agents
+Published May 27, 2026
+
+Starting today, every Buffer plan includes API access. You can now create, schedule and publish posts, read analytics and manage channels programmatically, from your own scripts, from internal tools, or from AI agents acting on your behalf. Alongside the REST API we are shipping an official MCP server and a command-line interface, both available now.
+
+What is included
+The Buffer API is a REST API with JSON responses. It covers posts (create, update, schedule, publish now, delete), channels (list, connect status, posting schedules), ideas, tags and analytics (post performance, channel summaries, best times to post). Authentication uses API keys that you create in your account settings; each key can be scoped to specific channels.
+
+Plans and limits
+The Free plan includes one API key and 1,000 requests per channel per month, up to 3,000 requests. Essentials includes three API keys and 3,000 requests per channel per month, up to 30,000. Team includes five API keys and 10,000 requests per channel per month, up to 100,000. Limits reset monthly and are shown in your settings. Pricing of the plans themselves is unchanged.
+
+The MCP server
+The Buffer MCP server lets AI assistants that speak the Model Context Protocol, such as Claude, ChatGPT and Cursor, work with your Buffer account in conversation. Ask your assistant to draft a week of posts from a blog article, schedule them at your best times, and report back on last month's engagement, and it will call the Buffer API through the MCP server using your own key. The server is open source and runs locally or as a hosted connector.
+
+The CLI
+The Buffer CLI brings the same capabilities to the terminal: buffer post create, buffer channel list, buffer analytics export, and more. It is designed for automation in CI pipelines and cron jobs, and it reads the same API keys as the MCP server.
+
+Machine-readable pricing
+We have also published a machine-readable version of our pricing page so agents can answer questions about plans and limits accurately. It is linked from the pricing page.
+
+Why now
+More of our customers are working alongside AI agents, and agencies in particular asked for a way to connect Buffer to the systems they already run. Rather than build every integration ourselves, we are opening the platform so that you, and the agents you use, can build the workflows that fit your business.
+
+Getting started
+Create an API key in Settings, read the documentation at developers.buffer.com, and install the MCP server or CLI with a single command. The API, the MCP server and the CLI are generally available today on all plans.

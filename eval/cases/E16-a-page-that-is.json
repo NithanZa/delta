@@ -1,0 +1,25 @@
+{
+  "id": "E16",
+  "kind": "extract",
+  "description": "A page that is only a cookie banner, navigation and footer yields no facts about cookies, privacy or navigation.",
+  "source": "Boilerplate pages must not produce facts. Keep green.",
+  "snapshot": {
+    "url": "https://buffer.com/loading",
+    "sourceType": "website",
+    "publishedAt": "2026-10-31",
+    "textFile": "E16-cookie-banner.txt",
+    "title": "Buffer"
+  },
+  "expect": {
+    "facts": {
+      "mustNotInclude": [
+        {
+          "statementMatches": "cookie|privacy|navigation|accept all|footer|javascript|sitemap"
+        },
+        {
+          "quoteMatches": "cookie|accept all|reject all"
+        }
+      ]
+    }
+  }
+}

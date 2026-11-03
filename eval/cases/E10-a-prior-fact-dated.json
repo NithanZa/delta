@@ -1,0 +1,51 @@
+{
+  "id": "E10",
+  "kind": "synthesis",
+  "description": "A prior fact dated after the run cutoff must make synthesis refuse before calling the model.",
+  "source": "Point-in-time guard (phase 3, assertPointInTime); needed for backfill runs in phase 10.",
+  "cutoff": "2023-12-31",
+  "state": {
+    "snapshots": [
+      {
+        "key": "old",
+        "url": "https://buffer.com/pricing",
+        "sourceType": "pricing",
+        "publishedAt": "2023-06-17",
+        "textFile": "E10-pricing-2023-06-17.txt",
+        "title": "Pricing | Buffer"
+      },
+      {
+        "key": "new",
+        "url": "https://buffer.com/pricing",
+        "sourceType": "pricing",
+        "publishedAt": "2026-10-31",
+        "textFile": "E10-pricing-2026-10-31.txt",
+        "title": "Pricing | Buffer"
+      }
+    ],
+    "priorCutoff": "2026-10-31",
+    "priorFacts": [
+      {
+        "key": "f1",
+        "snapshot": "new",
+        "statement": "Buffer's pricing page says you only pay for the channels you use.",
+        "quote": "Only pay for the channels you use",
+        "category": "pricing",
+        "importance": 3
+      }
+    ],
+    "newFacts": [
+      {
+        "key": "n1",
+        "snapshot": "old",
+        "statement": "Buffer's 2023 pricing page offers yearly billing that saves two months.",
+        "quote": "Save 2 months with yearly billing",
+        "category": "pricing",
+        "importance": 2
+      }
+    ]
+  },
+  "expect": {
+    "throws": "point.in.time|cutoff|dated after|after the cutoff"
+  }
+}

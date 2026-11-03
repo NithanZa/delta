@@ -11,8 +11,9 @@ import path from "node:path";
 import { eq } from "drizzle-orm";
 import { createDb, schema } from "@/db";
 import { env } from "@/lib/env";
-import { corpusDir } from "@/lib/ingest/providers";
+import { applyWatchFlags, corpusDir } from "@/lib/ingest/providers";
 import { insertSnapshotRecord, type SnapshotRecord } from "@/lib/ingest/snapshot";
+import { domainFromWebsite } from "@/lib/ingest/watchlist";
 
 type SeedCompetitor = { name: string; slug: string; website: string; description: string };
 type SeedQuestions = Record<string, string[]>;
@@ -46,13 +47,14 @@ function main() {
 
   // One transaction on the shared connection: a failed snapshot leaves no half-added competitor behind.
   const { row, created } = db.transaction(() => {
-    const row = db.insert(schema.competitors).values(competitor).returning().get();
+    const row = db.insert(schema.competitors).values({ ...competitor, domain: domainFromWebsite(competitor.website) }).returning().get();
     for (const text of questions) db.insert(schema.researchQuestions).values({ competitorId: row.id, text }).run();
     let created = 0;
     for (const file of files) {
       const rec = JSON.parse(fs.readFileSync(path.join(snapshotDir, file), "utf8")) as SnapshotRecord;
       if (insertSnapshotRecord(db, row.id, rec).created) created++;
     }
+    applyWatchFlags(db, row.id, slug);
     return { row, created };
   });
 

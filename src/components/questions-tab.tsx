@@ -1,14 +1,18 @@
 import { Badge, Card, EmptyState, SectionTitle } from "@/components/ui";
 import { CorrectionForm } from "@/components/correction-form";
+import { EvidenceList } from "@/components/evidence-list";
 import { runLabel } from "@/components/overview";
 import { linkRefs } from "@/components/refs";
 import { resolveQuestion } from "@/app/c/[slug]/actions";
 import type { Workspace } from "@/lib/queries";
+import { factMap, snapshotMap } from "@/lib/queries";
 
 export function QuestionsTab({ ws }: { ws: Workspace }) {
   if (ws.questions_open.length === 0 && ws.questions_resolved.length === 0) {
     return <EmptyState title="No follow-up questions yet">Delta turns important uncertainties into research tasks for the next run.</EmptyState>;
   }
+  const facts = factMap(ws.facts);
+  const snapshots = snapshotMap(ws.snapshots);
   return (
     <div className="grid gap-6">
       <div>
@@ -19,10 +23,17 @@ export function QuestionsTab({ ws }: { ws: Workspace }) {
             <Card key={q.id} id={`q-${q.id}`}>
               <div className="flex flex-wrap items-center gap-1.5">
                 <Badge tone="warn">open</Badge>
+                {q.kind === "conflict" && <Badge tone="bad">conflict between sources</Badge>}
                 <span className="text-xs text-muted">raised in {runLabel(ws.runs, q.createdRunId)}</span>
                 <span className="ml-auto text-[11px] text-muted">Q{q.id}</span>
               </div>
               <p className="mt-2 text-sm leading-relaxed">{linkRefs(q.question, ws.competitor.slug)}</p>
+              {q.kind === "conflict" && q.factIds.length > 0 && (
+                <div className="mt-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">The two sources</p>
+                  <EvidenceList factIds={q.factIds} facts={facts} snapshots={snapshots} compact />
+                </div>
+              )}
               <div className="mt-3">
                 <CorrectionForm slug={ws.competitor.slug} id={q.id} action={resolveQuestion} current={null} label="Mark resolved" placeholder="What did you find out?" fieldName="resolution" ariaLabel={`Resolve question Q${q.id}`} />
               </div>
@@ -38,6 +49,7 @@ export function QuestionsTab({ ws }: { ws: Workspace }) {
             <Card key={q.id} id={`q-${q.id}`} className="border-dashed bg-surface/60">
               <div className="flex flex-wrap items-center gap-1.5">
                 <Badge tone="ok">resolved</Badge>
+                {q.kind === "conflict" && <Badge tone="neutral">conflict</Badge>}
                 <span className="text-xs text-muted">
                   raised in {runLabel(ws.runs, q.createdRunId)} · resolved {q.resolvedRunId ? `in ${runLabel(ws.runs, q.resolvedRunId)}` : "by you"}
                 </span>

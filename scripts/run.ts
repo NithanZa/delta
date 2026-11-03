@@ -7,7 +7,7 @@
 import { eq } from "drizzle-orm";
 import { createDb, schema } from "@/db";
 import { env } from "@/lib/env";
-import { nextReplayRun } from "@/lib/pipeline/presets";
+import { nextRun } from "@/lib/pipeline/presets";
 import { executeRun, startRun } from "@/lib/pipeline/run";
 
 function arg(name: string): string | undefined {
@@ -21,7 +21,7 @@ async function main() {
   const competitor = db.select().from(schema.competitors).where(eq(schema.competitors.slug, slug)).get();
   if (!competitor) throw new Error(`No competitor with slug "${slug}". Run npm run seed first.`);
 
-  const preset = process.argv.includes("--next") || !arg("label") ? nextReplayRun(db, competitor.id) : { label: arg("label")!, cutoffDate: arg("cutoff")! };
+  const preset = process.argv.includes("--next") || !arg("label") ? nextRun(db, competitor.id) : { kind: "manual" as const, label: arg("label")!, cutoffDate: arg("cutoff")! };
   const run = startRun(db, { competitorId: competitor.id, ...preset }); // throws if a run is already in flight
   console.log(`▶ ${run.label} for ${competitor.name} (cutoff ${run.cutoffDate}, run id ${run.id})\n`);
 

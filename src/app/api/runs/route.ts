@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
-import { nextReplayRun } from "@/lib/pipeline/presets";
+import { nextRun } from "@/lib/pipeline/presets";
 import { executeRun, findActiveRun, startRun } from "@/lib/pipeline/run";
 
 const Body = z.object({
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   const already = findActiveRun(db, competitorId);
   if (already) return NextResponse.json({ error: `${already.label} is already running`, runId: already.id }, { status: 409 });
 
-  const preset = parsed.data.label && parsed.data.cutoffDate ? { label: parsed.data.label, cutoffDate: parsed.data.cutoffDate } : nextReplayRun(db, competitorId);
+  const preset = parsed.data.label && parsed.data.cutoffDate ? { kind: "manual" as const, label: parsed.data.label, cutoffDate: parsed.data.cutoffDate } : nextRun(db, competitorId);
   const run = startRun(db, { competitorId, ...preset });
 
   const encoder = new TextEncoder();
