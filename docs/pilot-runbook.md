@@ -45,9 +45,10 @@ Answers appear under **Partner answers** on `/ops`. If there is no answer, ask i
 1. Open `/ops`. Check that the worker dot is green and no job failed.
 2. **Held digests:** read the reason. A held digest means a cited quote was not verbatim, a fact postdates its run, or two insight titles duplicate each other. Fix the cause, or use **Send anyway** with a reason, which is recorded.
 3. **Label the sample:** after each send the worker writes `data/labels/<date>.csv` with 25 items. Label it following `eval/labels/README.md` (about 20 minutes the first time) and add a line to `eval/labels/ledger.md`.
-4. **Wrong reactions:** check each against its source this week, and correct the record if Delta was wrong.
+4. **Wrong reactions:** work through **Wrong reactions to review** on `/ops`. Each one shows the reader's note and the quotes behind the insight. Check them against the sources and record **Delta was wrong** or **Delta was right**. If Delta was wrong, follow the insight's link and correct it there, because recording the outcome doesn't change the insight. If the reader adds a note later, the reaction returns to the queue.
 5. **Open conflicts and questions:** add a correction or resolution where you know the answer.
 6. **Watchlist:** add anything the partner's notes suggest.
+7. **Spend:** check `/usage`, which shows cost per competitor and week, split into extraction, synthesis and discovery, and cost per digest. Set a monthly budget in Settings to get an email at 80% and 100%. The alert never stops a run or a digest.
 
 ## Go / no-go
 

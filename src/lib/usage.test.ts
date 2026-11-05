@@ -4,10 +4,24 @@ import { describe, expect, it } from "vitest";
 import { createDb, getDb, schema } from "@/db";
 import { exaContents, exaSearch } from "@/lib/ingest/exa";
 import { AiSdkClient } from "@/lib/llm/aiSdk";
+import { hashContent, insertSnapshotRecord } from "@/lib/ingest/snapshot";
 import { loadLlmConfig } from "@/lib/llm/config";
-import { recordUsage, usageReport } from "./usage";
+import { MockLlmClient } from "@/lib/llm/mock";
+import { executeRun, startRun } from "@/lib/pipeline/run";
+import { recordUsage, usageReport, withUsageScope } from "./usage";
 
 const now = new Date("2026-11-10T12:00:00.000Z");
+
+function pipelineSetup() {
+  const db = createDb(":memory:");
+  db.insert(schema.company).values({ name: "Loop" }).run();
+  const comp = db.insert(schema.competitors).values({ name: "Buffer", slug: "buffer", website: "https://buffer.com", domain: "buffer.com" }).returning().get();
+  for (const n of [1, 2, 3]) {
+    const text = `Buffer pricing page ${n}. The Agency plan starts at $120 per month for up to 10 channels. Any additional channels cost extra each month. The Team plan includes unlimited users.`;
+    insertSnapshotRecord(db, comp.id, { url: `https://buffer.com/pricing/${n}`, sourceType: "pricing", provider: "seeded", title: "Pricing", publishedAt: "2023-06-17", fetchedAt: "2026-10-31T00:00:00.000Z", archiveUrl: null, rawHtml: "", extractedText: text, contentHash: hashContent(text) });
+  }
+  return { db, comp };
+}
 const llm = { service: "llm" as const, provider: "openai.com", model: "gpt-6-luna", task: "extract_facts" };
 const exa = { service: "exa" as const, provider: "exa.ai", model: "search", task: "discovery" };
 
@@ -52,6 +66,69 @@ describe("usageReport", () => {
     const report = usageReport(createDb(":memory:"), now);
     expect(report.firstAt).toBeNull();
     expect(report.periods[3].total).toMatchObject({ usd: 0, calls: 0 });
+  });
+});
+
+describe("spend per competitor and per digest", () => {
+  it("adds up each competitor's week by stage and keeps unscoped calls as Shared", () => {
+    const db = createDb(":memory:");
+    const buffer = db.insert(schema.competitors).values({ name: "Buffer", slug: "buffer", website: "https://buffer.com", domain: "buffer.com" }).returning().get();
+    const record = (task: string, costUsd: number | null) => recordUsage({ service: "llm", provider: "openai.com", model: "m", task, costUsd }, db);
+    withUsageScope({ competitorId: buffer.id }, () => {
+      record("extract_facts", 0.1);
+      record("synthesize", 1);
+      record("generate_insights", 0.5);
+      record("assess_relevance", 0.01);
+      record("write_digest", null);
+    });
+    record("draft_company", 0.2);
+    const weeks = usageReport(db).competitorWeeks;
+    expect(weeks.map((w) => w.name)).toEqual(["Buffer", "Shared"]);
+    expect(weeks[0].stages.extraction).toBeCloseTo(0.1);
+    expect(weeks[0].stages.synthesis).toBeCloseTo(1.5);
+    expect(weeks[0].stages.discovery).toBeCloseTo(0.01);
+    expect(weeks[0].usd).toBeCloseTo(1.61);
+    expect(weeks[0].unpriced).toBe(1);
+    expect(weeks[1].stages.other).toBeCloseTo(0.2);
+  });
+
+  it("charges a whole run to its competitor and run, including its parallel extraction calls", async () => {
+    const { db, comp } = pipelineSetup();
+    const recording = new MockLlmClient();
+    const inner = recording.complete.bind(recording);
+    recording.complete = async (req) => {
+      const res = await inner(req);
+      await new Promise((r) => setTimeout(r, 1)); // like a real network call, so concurrent calls interleave
+      recordUsage({ service: "llm", provider: "mock", model: "mock", task: req.task, costUsd: 0.01 }, db);
+      return res;
+    };
+    const run = startRun(db, { competitorId: comp.id, label: "Run 1", cutoffDate: "2030-01-01" });
+    const done = await executeRun(db, run.id, () => {}, recording);
+    expect(done.status).toBe("done");
+    const rows = db.select().from(schema.usageEvents).all();
+    expect(rows.length).toBeGreaterThan(3);
+    expect(rows.every((r) => r.competitorId === comp.id && r.runId === run.id)).toBe(true);
+  });
+
+  it("gives each sent digest the spend inside its period, and nothing for unsent ones", () => {
+    const { db } = pipelineSetup();
+    const at = (iso: string, costUsd: number) => {
+      recordUsage({ service: "llm", provider: "m", model: "m", task: "synthesize", costUsd }, db);
+      const last = db.select().from(schema.usageEvents).all().at(-1)!;
+      db.update(schema.usageEvents).set({ createdAt: iso }).where(eq(schema.usageEvents.id, last.id)).run();
+    };
+    at("2026-11-03T00:00:00.000Z", 1);
+    at("2026-11-05T00:00:00.000Z", 2);
+    at("2026-11-12T00:00:00.000Z", 4);
+    const digest = (sequence: number, periodStart: string, periodEnd: string, status: "sent" | "held") => db.insert(schema.digests).values({ sequence, periodStart, periodEnd, status, subject: "", html: "", text: "", content: {} }).run();
+    digest(1, "2026-11-01T00:00:00.000Z", "2026-11-04T00:00:00.000Z", "sent");
+    digest(2, "2026-11-04T00:00:00.000Z", "2026-11-11T00:00:00.000Z", "sent");
+    digest(3, "2026-11-11T00:00:00.000Z", "2026-11-18T00:00:00.000Z", "held");
+    const spends = usageReport(db).digests;
+    expect(spends.map((d) => [d.sequence, d.usd])).toEqual([
+      [2, 2],
+      [1, 1],
+    ]);
   });
 });
 

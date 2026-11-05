@@ -24,8 +24,12 @@ export type SettingValues = {
   "app.baseUrl": string;
   /** Optional Slack incoming webhook; empty = no Slack post. */
   "slack.webhookUrl": string;
-  /** Where held/failed digests are reported. */
+  /** Where held/failed digests and budget alerts are reported. */
   "ops.email": string;
+  /** Alert the operator as monthly spend nears this many US dollars; 0 turns the alert off. It never stops work. */
+  "budget.monthlyUsd": number;
+  /** The last alert sent, as "YYYY-MM:percent", so each level is sent once a month. */
+  "budget.lastAlert": string | null;
   "discovery.enabled": boolean;
   "discovery.maxNewPagesPerRun": number;
   "discovery.lookbackDays": number;
@@ -46,6 +50,8 @@ export const SETTING_DEFAULTS: SettingValues = {
   "app.baseUrl": env.baseUrl,
   "slack.webhookUrl": "",
   "ops.email": "",
+  "budget.monthlyUsd": 0,
+  "budget.lastAlert": null,
   "discovery.enabled": true,
   "discovery.maxNewPagesPerRun": 10,
   "discovery.lookbackDays": 14,

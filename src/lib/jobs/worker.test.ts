@@ -3,7 +3,9 @@ import { createDb, schema } from "@/db";
 import { hashContent, insertSnapshotRecord } from "@/lib/ingest/snapshot";
 import type { LlmClient } from "@/lib/llm/client";
 import { MockLlmClient } from "@/lib/llm/mock";
+import { FakeSender } from "@/lib/digest/send";
 import { getSetting, setSetting } from "@/lib/settings";
+import { recordUsage } from "@/lib/usage";
 import { enqueue, listJobs } from "./queue";
 import { createSchedules, startWorker } from "./worker";
 
@@ -31,6 +33,28 @@ describe("createSchedules", () => {
 });
 
 describe("startWorker", () => {
+  it("checks the budget after a job, without letting a failed alert affect the job", async () => {
+    const { db, comp } = setup();
+    setSetting(db, "budget.monthlyUsd", 1);
+    setSetting(db, "ops.email", "ops@example.com");
+    recordUsage({ service: "llm", provider: "openai.com", model: "m", task: "synthesize", costUsd: 2 }, db);
+    const sender = new FakeSender();
+    const worker = startWorker(db, { client: new MockLlmClient(), sender, pollMs: 20, heartbeatMs: 1000, rescheduleMs: 1000, log: () => {} });
+    enqueue(db, { kind: "run", competitorId: comp.id, requestedBy: "ui" });
+    await sleep(150);
+    await worker.stop();
+    expect(sender.sent.map((m) => m.subject)).toEqual([expect.stringMatching(/^Delta spend: 200% of the /)]);
+
+    const lines: string[] = [];
+    setSetting(db, "budget.lastAlert", null);
+    const failing = startWorker(db, { client: new MockLlmClient(), sender: new FakeSender("Resend is down"), pollMs: 20, heartbeatMs: 1000, rescheduleMs: 1000, log: (m) => lines.push(m) });
+    const job = enqueue(db, { kind: "run", competitorId: comp.id, requestedBy: "ui" }); // nothing new, so it finishes as skipped
+    await sleep(150);
+    await failing.stop();
+    expect(listJobs(db).find((j) => j.id === job.id)?.status).toBe("skipped");
+    expect(lines.some((l) => l.includes("Resend is down"))).toBe(true);
+  });
+
   it("writes a heartbeat, claims queued jobs, waits for the running job on stop, and reschedules on settings changes", async () => {
     const { db, comp } = setup();
     const lines: string[] = [];

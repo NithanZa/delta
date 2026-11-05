@@ -5,6 +5,7 @@
 import { Cron } from "croner";
 import type { Db } from "@/db";
 import { schema } from "@/db";
+import { checkBudget } from "@/lib/budget";
 import { getSchedule, setSetting, type Schedule } from "@/lib/settings";
 import { claimNext, enqueue, recoverInterruptedJobs } from "./queue";
 import { runJob, type JobRunnerOptions } from "./run";
@@ -94,6 +95,8 @@ export function startWorker(db: Db, opts: WorkerOptions = {}) {
     current = runJob(db, job, opts)
       .then((done) => log(`job #${done.id} ${done.kind} ${done.status}${done.error ? `: ${done.error}` : ""}`))
       .catch((e) => log(`job #${job.id} crashed: ${(e as Error).message}`))
+      .then(() => checkBudget(db, { sender: opts.sender, now: opts.now, log }))
+      .catch((e) => log(`budget check failed: ${(e as Error).message}`))
       .finally(() => {
         current = null;
       });

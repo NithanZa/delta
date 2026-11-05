@@ -24,6 +24,9 @@ export const DIGEST_STATUSES = ["draft", "held", "sent", "failed"] as const;
 export type DigestStatus = (typeof DIGEST_STATUSES)[number];
 export const DIGEST_CHANNELS = ["email", "slack"] as const;
 export const REACTION_KINDS = ["useful", "wrong", "acted_on"] as const;
+/** What the operator found when checking a Wrong reaction against its sources. */
+export const REVIEW_OUTCOMES = ["delta_wrong", "delta_right"] as const;
+export type ReviewOutcome = (typeof REVIEW_OUTCOMES)[number];
 export type ReactionKind = (typeof REACTION_KINDS)[number];
 export const REACTION_SOURCES = ["email", "dashboard", "reply"] as const;
 export const EVENT_NAMES = ["digest_sent", "insight_viewed", "insight_reacted", "insight_corrected", "source_added", "reply_received", "decision_influenced"] as const;
@@ -451,6 +454,10 @@ export const reactions = sqliteTable(
     source: text("source", { enum: REACTION_SOURCES }).notNull(),
     actorEmail: text("actor_email"),
     createdAt: text("created_at").notNull().$defaultFn(now),
+    /** Set when the operator has checked a Wrong reaction; null means it is still in the queue on /ops. */
+    reviewedAt: text("reviewed_at"),
+    reviewOutcome: text("review_outcome", { enum: REVIEW_OUTCOMES }),
+    reviewNote: text("review_note"),
   },
   (t) => [uniqueIndex("reactions_insight_digest_kind").on(t.insightId, t.digestId, t.kind)],
 );
@@ -480,6 +487,9 @@ export const usageEvents = sqliteTable(
     cacheWriteTokens: integer("cache_write_tokens").notNull().default(0),
     /** Fixed when the call is made so later price changes do not rewrite history. Null when the model has no known price. */
     costUsd: real("cost_usd"),
+    /** Null for spend shared by the whole instance: onboarding drafts, digest wording, connectivity checks. Not foreign keys: a constraint failure would lose a call that was already paid for. */
+    competitorId: integer("competitor_id"),
+    runId: integer("run_id"),
     createdAt: text("created_at").notNull().$defaultFn(now),
   },
   (t) => [index("usage_events_created_at").on(t.createdAt)],

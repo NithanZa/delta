@@ -71,3 +71,57 @@ export async function assessRelevance(
   });
   return { verdict: res.data, usage: res.usage };
 }
+
+/** `pages` are indexes into the candidate list, best source first. `event` is false for pages that report nothing that happened. */
+export type Story = { pages: number[]; event: boolean };
+
+const StoriesOutput = z.object({ stories: z.array(z.object({ pages: z.array(z.coerce.number().int()), event: z.coerce.boolean().catch(false) })) });
+const StoriesWire = z.object({ stories: z.array(z.object({ pages: z.array(z.number()), event: z.boolean() })) });
+
+export function storiesSystemPrompt(competitorName: string): string {
+  return `You group web pages about the company "${competitorName}" by the story they cover.
+
+## Rules
+- Two pages share a story when they report the same event or announcement, such as one acquisition, one launch or one price change, however differently the outlets word it.
+- Pages about different events are different stories, even when the topic is similar: two separate feature launches are two stories.
+- "event": true when the story reports something that happened at a point in time: a launch, acquisition, funding round, partnership, price or plan change, leadership change or integration.
+- "event": false for pages that report nothing that happened, such as reviews, comparisons, "best tools" lists and product landing pages. Each of these is a story of its own, unless it is mostly about an event another page covers.
+- List each story's pages best source first: an official announcement by a company involved, then established press, then everything else.
+- Put every page number in exactly one story.
+
+Respond with JSON only: {"stories":[{"pages":[3,0],"event":true},{"pages":[1],"event":false}]}`;
+}
+
+export function storiesUserPrompt(pages: { url: string; title?: string | null; publishedAt?: string | null; reason?: string }[]): string {
+  return pages.map((p, i) => `${i}. ${p.title || "(untitled)"} | ${p.publishedAt ?? "undated"} | ${p.url}${p.reason ? ` | ${p.reason}` : ""}`).join("\n");
+}
+
+/** A page the model left out or repeated still lands in exactly one story, so grouping can never lose a candidate. */
+export function normalizeStories(stories: Story[], pageCount: number): Story[] {
+  const seen = new Set<number>();
+  const out: Story[] = [];
+  for (const story of stories) {
+    const pages = story.pages.filter((i) => {
+      if (i < 0 || i >= pageCount || seen.has(i)) return false;
+      seen.add(i);
+      return true;
+    });
+    if (pages.length) out.push({ pages, event: story.event });
+  }
+  for (let i = 0; i < pageCount; i++) if (!seen.has(i)) out.push({ pages: [i], event: false });
+  return out;
+}
+
+export async function groupStories(competitorName: string, pages: { url: string; title?: string | null; publishedAt?: string | null; reason?: string }[], client?: LlmClient): Promise<{ stories: Story[]; usage: LlmUsage }> {
+  const res = await callJson({
+    task: "group_stories",
+    role: "extract",
+    wire: StoriesWire,
+    system: storiesSystemPrompt(competitorName),
+    user: storiesUserPrompt(pages),
+    schema: StoriesOutput,
+    maxTokens: 2048,
+    client,
+  });
+  return { stories: normalizeStories(res.data.stories, pages.length), usage: res.usage };
+}

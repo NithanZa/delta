@@ -107,6 +107,9 @@ export const defaultHandlers: Partial<Record<LlmTask, MockHandler>> = {
     return { aboutCompetitor: about, relevant: about, reason: about ? `Mock: mentions ${name}` : "Mock: does not mention the competitor", sourceType: /pric/i.test(excerpt) ? "pricing" : "press" };
   },
 
+  /** Every page is its own story; tests that care about grouping supply their own handler. */
+  group_stories: (req) => ({ stories: req.user.split("\n").map((_, i) => ({ pages: [i], event: false })) }),
+
   /**
    * Deterministic arc for tests: Run 1 creates a hypothesis, Run 2 strengthens
    * it, Run 3 revises it. New facts are the F ids after the "NEW facts" header.

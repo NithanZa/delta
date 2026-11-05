@@ -8,7 +8,7 @@ const initial: SettingsState = { ok: true, message: "" };
 const inputCls = "w-full rounded-md border border-line bg-bg px-3 py-2 text-sm focus:border-accent focus:outline-none";
 const labelCls = "text-xs font-semibold uppercase tracking-wide text-muted";
 
-export type DigestSettingsValues = { to: string[]; from: string; baseUrl: string; slackWebhookUrl: string; opsEmail: string };
+export type DigestSettingsValues = { to: string[]; from: string; baseUrl: string; slackWebhookUrl: string; opsEmail: string; budgetUsd: number };
 
 export function DigestSettingsForm({ values }: { values: DigestSettingsValues }) {
   const [state, action, pending] = useActionState(saveDigestSettings, initial);
@@ -31,8 +31,13 @@ export function DigestSettingsForm({ values }: { values: DigestSettingsValues })
         <input name="slackWebhookUrl" defaultValue={values.slackWebhookUrl} className={inputCls} placeholder="https://hooks.slack.com/services/…" />
       </label>
       <label className="grid gap-1 text-sm">
-        <span className={labelCls}>Ops email (held and failed digests)</span>
+        <span className={labelCls}>Ops email (held and failed digests, budget alerts)</span>
         <input name="opsEmail" defaultValue={values.opsEmail} className={inputCls} placeholder="you@example.com" />
+      </label>
+      <label className="grid gap-1 text-sm">
+        <span className={labelCls}>Monthly budget alert in US dollars (0 = off)</span>
+        <input name="budgetUsd" type="number" min="0" step="any" defaultValue={values.budgetUsd} className={inputCls} />
+        <span className="text-xs text-muted">Emails the ops address at 80% and 100%. Runs and digests keep going.</span>
       </label>
       <div className="flex items-center gap-3">
         <Button type="submit" variant="ghost" disabled={pending}>

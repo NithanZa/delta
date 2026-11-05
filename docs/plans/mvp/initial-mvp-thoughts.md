@@ -20,6 +20,14 @@ Written 2026-11-02, before the prototype was built. Purpose: capture the ranked 
 9. **Postgres as an option, SQLite as default.** Only for self-hosters who want managed storage. Not a graph database.
 10. **Open-source hygiene.** Plugin docs for the source-provider and model-client interfaces, the eval suite public so contributors cannot regress trust, contributing guide, regression suite in CI (prototype CI runs gates only; regression needs a funded key).
 
+**Already done, ahead of the pilot (2026-11-04),** because no pilot answer could change them:
+
+- Item 6: the Wrong review queue on `/ops`. Hypothesis editing and research-question pinning still wait.
+- Item 7: spend per competitor, per run and per digest, and a monthly budget alert. Batches and a cheaper fallback model still wait on question 4.
+- Item 10: an MIT license, a contributing guide and docs for the provider interfaces. Regression in CI still waits.
+
+Discovery also now shares its page cap across stories and puts events first. Question 2 still decides the cap sizes and source order.
+
 ## Decisions already made (carry into MVP planning)
 
 - Model-agnostic through the Vercel AI SDK (`ai` + `@ai-sdk/anthropic` + `@ai-sdk/openai-compatible`), chosen 2026-11-02 over a direct Anthropic SDK adapter; default Haiku 5.5 extraction, Opus 5.5 synthesis; StepFun selectable. Rough cost: a run was ~46k prompt + ~65k completion tokens on StepFun; on Opus 5.5 roughly $1.50 per run, so three partners × three competitors ≈ $15/week before discovery and backfill.

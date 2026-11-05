@@ -293,6 +293,7 @@ const DigestSettingsInput = z.object({
   baseUrl: z.string().trim().default(""),
   slackWebhookUrl: z.string().trim().default(""),
   opsEmail: z.string().trim().default(""),
+  budgetUsd: z.coerce.number().min(0).default(0),
 });
 
 export async function saveDigestSettings(_prev: SettingsState, formData: FormData): Promise<SettingsState> {
@@ -309,6 +310,7 @@ export async function saveDigestSettings(_prev: SettingsState, formData: FormDat
   if (p.data.baseUrl) setSetting(db, "app.baseUrl", p.data.baseUrl.replace(/\/+$/, ""));
   setSetting(db, "slack.webhookUrl", p.data.slackWebhookUrl);
   setSetting(db, "ops.email", p.data.opsEmail.toLowerCase());
+  setSetting(db, "budget.monthlyUsd", p.data.budgetUsd);
   revalidatePath("/settings");
   return { ok: true, message: `Saved; ${to.length} recipient${to.length === 1 ? "" : "s"}` };
 }

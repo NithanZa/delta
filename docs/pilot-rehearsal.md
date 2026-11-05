@@ -10,7 +10,7 @@ Before you start: `docs/deploy.md` is done, `npm run doctor` passes, and you hav
 4. **Discover.** Queue discovery from onboarding step 3 or `/ops`, or run `npm run discover -- --all` followed by `npm run discover -- --all --absence`. Check the Evidence tab: pages grouped by provider, kept pages with a reason, and absence-check cards.
 5. **Run the cycle.** On `/ops`, press "Crawl all", then "Run now" for each competitor. Press "Run now" again and confirm the second job finishes `skipped` with a reason.
 6. **Digest.** Set yourself as recipient in Settings and press "Digest now". Click Useful on one insight and Wrong on another. Press "Send a note" and submit a Buffer URL and two sentences, for example "our customers say Buffer's partner payouts are slow".
-7. **Close the loop.** Run Buffer again. Confirm that the URL was processed, the note is cited as `internal · <you>`, no hypothesis moved more than 0.1 on it alone, your Wrong reaction shows on the insight, and `/ops` shows the funnel.
+7. **Close the loop.** Run Buffer again. Confirm that the URL was processed, the note is cited as `internal · <you>`, no hypothesis moved more than 0.1 on it alone, your Wrong reaction shows on the insight and in the review queue on `/ops`, and `/ops` shows the funnel. Record an outcome and confirm the reaction leaves the queue. On `/usage`, confirm the week's spend is split by competitor.
 8. **Measure.** Inside the web container:
 
    ```bash

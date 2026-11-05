@@ -3,9 +3,10 @@ import { eq } from "drizzle-orm";
 import { createDb, schema } from "@/db";
 import { MockLlmClient } from "@/lib/llm/mock";
 import { runAbsenceChecks } from "@/lib/pipeline/absence";
+import { normalizeStories } from "@/lib/pipeline/relevance";
 import { gateQuotes } from "../../../eval/lib/gates";
 import { crawlCompetitor } from "./crawl";
-import { discoverCompetitor, exaTextFallback, recordFromText } from "./discovery";
+import { discoverCompetitor, exaTextFallback, recordFromText, selectAcrossStories } from "./discovery";
 import { exaContents, ExaError, exaSearch } from "./exa";
 import { discoveryQueries, normalizeUrl, SearchProvider } from "./providers";
 import { hashContent, insertSnapshotRecord } from "./snapshot";
@@ -114,6 +115,62 @@ describe("discovery", () => {
     expect(fallback.publishedAt).toBe("2025-07-12");
     expect(snaps.find((s) => s.url === "https://news.example/acquisition")!.rawHtml).not.toBe("");
     expect(recordFromText("https://a.example", { sourceType: "press", text: " hi ", publishedAt: "2025-01-01" }).contentHash).toBe(hashContent("hi"));
+  });
+
+  it("shares the cap between stories so one big story cannot take every slot", async () => {
+    const { db, comp } = setup();
+    const page = (slug: string, title: string, score: number) => ({ url: `https://news.example/${slug}`, sourceType: "press" as const, provider: "discovery" as const, publishedAt: "2025-07-10", title, note: "q", text: paragraph, score });
+    const candidates = [page("a1", "group.one buys SocialPilot", 0.9), page("a2", "SocialPilot acquired", 0.85), page("a3", "Deal: group.one and SocialPilot", 0.8), page("a4", "More on the deal", 0.75), page("a5", "Deal analysis", 0.7), page("launch", "SocialPilot launches an MCP server", 0.3), page("price", "SocialPilot raises prices", 0.2)];
+    const fetchImpl = (async (input: string | URL | Request) => new Response(html(String(input), paragraph), { status: 200, headers: { "content-type": "text/html" } })) as unknown as typeof fetch;
+    // The model puts a4 first: it is the official announcement, even though search ranked it low.
+    const client = new MockLlmClient().on("group_stories", () => ({ stories: [{ pages: [3, 0, 1, 2, 4], event: true }, { pages: [5], event: true }, { pages: [6], event: true }] }));
+    const r = await discoverCompetitor(db, comp.id, { since: "2025-06-01", until: "2025-08-31", candidates, fetchImpl, client, maxNewPages: 4 });
+    expect(r).toMatchObject({ relevant: 7, created: 4, capped: 3 });
+    const urls = db.select().from(schema.sources).all().map((s) => s.url.split("/").pop());
+    expect(urls.sort()).toEqual(["a1", "a4", "launch", "price"]);
+  });
+
+  it("falls back to the highest ranked pages when grouping fails, and does not ask when everything fits", async () => {
+    const { db, comp } = setup();
+    const page = (slug: string, score: number) => ({ url: `https://news.example/${slug}`, sourceType: "press" as const, provider: "discovery" as const, publishedAt: "2025-07-10", title: slug, note: "q", text: paragraph, score });
+    const fetchImpl = (async (input: string | URL | Request) => new Response(html(String(input), paragraph), { status: 200, headers: { "content-type": "text/html" } })) as unknown as typeof fetch;
+    const failing = new MockLlmClient().on("group_stories", () => {
+      throw new Error("model down");
+    });
+    const r = await discoverCompetitor(db, comp.id, { since: "2025-06-01", until: "2025-08-31", candidates: [page("low", 0.1), page("high", 0.9), page("mid", 0.5)], fetchImpl, client: failing, maxNewPages: 2 });
+    expect(r).toMatchObject({ created: 2, capped: 1, errors: 0 });
+    expect(db.select().from(schema.sources).all().map((s) => s.url.split("/").pop()).sort()).toEqual(["high", "mid"]);
+
+    const roomy = new MockLlmClient();
+    await discoverCompetitor(db, comp.id, { since: "2025-06-01", until: "2025-08-31", candidates: [page("x", 0.1)], fetchImpl, client: roomy, maxNewPages: 2 });
+    expect(roomy.calls.some((c) => c.task === "group_stories")).toBe(false);
+  });
+
+  it("never takes more than three pages of a story, even with slots to spare", () => {
+    const pages = [0.9, 0.8, 0.7, 0.6, 0.5].map((score) => ({ score }));
+    expect(selectAcrossStories(pages, [{ pages: [0, 1, 2, 3, 4], event: true }], 10)).toEqual([{ score: 0.9 }, { score: 0.8 }, { score: 0.7 }]);
+    expect(selectAcrossStories(pages, [4, 3, 2, 1, 0].map((i) => ({ pages: [i], event: false })), 2)).toEqual([{ score: 0.9 }, { score: 0.8 }]);
+  });
+
+  it("corroborates events before spending slots on pages that report nothing that happened", () => {
+    const pages = [
+      { name: "review", score: 0.99 },
+      { name: "deal-official", score: 0.2 },
+      { name: "deal-press", score: 0.5 },
+      { name: "deal-blog", score: 0.4 },
+      { name: "launch", score: 0.3 },
+    ];
+    const stories = [{ pages: [0], event: false }, { pages: [1, 2, 3], event: true }, { pages: [4], event: true }];
+    const names = (max: number) => selectAcrossStories(pages, stories, max).map((p) => p.name);
+    expect(names(2)).toEqual(["deal-official", "launch"]);
+    expect(names(3)).toEqual(["deal-official", "launch", "deal-press"]);
+    expect(names(4)).toEqual(["deal-official", "launch", "deal-press", "review"]);
+    expect(names(5)).toEqual(["deal-official", "launch", "deal-press", "review", "deal-blog"]);
+  });
+
+  it("repairs a model's grouping so no page is lost or counted twice", () => {
+    const stories = [{ pages: [0, 1], event: true }, { pages: [1, 2, 9], event: false }, { pages: [], event: true }];
+    expect(normalizeStories(stories, 4)).toEqual([{ pages: [0, 1], event: true }, { pages: [2], event: false }, { pages: [3], event: false }]);
   });
 
   it("uses Exa's crawler text for watched pages our fetcher cannot read", async () => {

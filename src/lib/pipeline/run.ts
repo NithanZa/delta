@@ -5,6 +5,7 @@ import type { Run, RunKind, RunLogEntry, RunStats } from "@/db/schema";
 import { addUsage as addLlmUsage, type LlmClient, type LlmRole, type LlmUsage } from "@/lib/llm/client";
 import { getLlmConfig, getModelLabels } from "@/lib/llm/config";
 import { estimateRunCostUsd } from "@/lib/llm/pricing";
+import { withUsageScope } from "@/lib/usage";
 import { loadCompanyContext } from "./context";
 import type { OnEvent, RunEvent } from "./events";
 import { runExtraction } from "./extract";
@@ -92,7 +93,10 @@ function finalizeStats(stats: RunStats) {
 export async function executeRun(db: Db, runId: number, onEvent: OnEvent = () => {}, client?: LlmClient): Promise<Run> {
   const run = db.select().from(schema.runs).where(eq(schema.runs.id, runId)).get();
   if (!run) throw new Error(`Run ${runId} not found`);
+  return withUsageScope({ competitorId: run.competitorId, runId: run.id }, () => performRun(db, run, onEvent, client));
+}
 
+async function performRun(db: Db, run: Run, onEvent: OnEvent, client?: LlmClient): Promise<Run> {
   const log: RunLogEntry[] = [];
   const stats: RunStats = {};
   const t0 = Date.now();

@@ -49,6 +49,19 @@ Run on a copy of `data/delta.db` with `gpt-6-luna` (extract) and `gpt-6.1-sol` (
 
 Found this way: OpenAI's GPT-6 models return a 400 for `max_tokens` and for any temperature but the default. Both are now handled in the adapter. Also, all 10 discovery slots went to articles about one event while 28 relevant pages were dropped by the cap, so one big story can crowd out everything else that week.
 
+## Added 2026-11-04: discovery shares its slots across stories
+
+Same window on a fresh copy of `data/delta.db`, with `gpt-6-luna` and `gpt-6.1-sol`. Discovery now groups pages into stories when the cap applies, and picks events before pages that report nothing that happened.
+
+| Check | Result |
+|---|---|
+| Discovery | 52 candidates, 32 relevant, 6 events and 13 other pages, 10 kept. Grouping cost $0.0006 |
+| What the 10 slots held | group.one's own announcement and a co-founder's post on the deal, four product launches, two sources on the LinkedIn analytics API, two reviews. Before this change all 10 covered the acquisition |
+| Full run with a current cutoff | 15 pages, 135 facts, 342 s, about $0.215. G1 to G5 pass on the whole database |
+| Recall | 10 of 11, the same as before. Still missing: the April 2026 MCP server, which is outside this window |
+
+The first version shared slots evenly and let "best tools" lists fill them, dropping group.one's own announcement. That is why events now come first. One window on one competitor is thin evidence, so check the selection again on real partner data.
+
 ## Not yet proven
 
 - Anything on Claude models: structured outputs, prompt caching and real cost.

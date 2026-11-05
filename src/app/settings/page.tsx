@@ -36,6 +36,7 @@ export default function SettingsPage() {
     baseUrl: getSetting(db, "app.baseUrl"),
     slackWebhookUrl: getSetting(db, "slack.webhookUrl"),
     opsEmail: getSetting(db, "ops.email"),
+    budgetUsd: getSetting(db, "budget.monthlyUsd"),
   };
   const fmt = (pattern: string) => {
     const d = nextCronRun(pattern, schedule.timezone);

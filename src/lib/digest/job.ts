@@ -224,13 +224,16 @@ export async function sendDigest(db: Db, digestId: number, opts: { sender: Email
   }
 }
 
-async function notifyOps(db: Db, sender: EmailSender, subject: string, text: string, log: (m: string) => void) {
+/** Returns whether the email went out. */
+export async function notifyOps(db: Db, sender: EmailSender, subject: string, text: string, log: (m: string) => void): Promise<boolean> {
   const ops = getSetting(db, "ops.email");
-  if (!ops) return;
+  if (!ops) return false;
   try {
     await sender.send({ from: getSetting(db, "digest.from"), to: [ops], subject, html: `<pre style="font-family:monospace">${text.replace(/</g, "&lt;")}</pre>`, text, idempotencyKey: `ops-${subject}-${Date.now()}` });
+    return true;
   } catch (e) {
     log(`could not notify ops: ${(e as Error).message}`);
+    return false;
   }
 }
 

@@ -6,7 +6,7 @@ import { MockLlmClient } from "./mock";
 /** Which stage of the pipeline is calling; each role maps to a configured provider:model. */
 export type LlmRole = "extract" | "synthesize";
 export type LlmEffort = "low" | "medium" | "high";
-export type LlmTask = "extract_facts" | "detect_change" | "synthesize" | "generate_insights" | "assess_relevance" | "draft_company" | "draft_competitor" | "write_digest" | "smoke";
+export type LlmTask = "extract_facts" | "detect_change" | "synthesize" | "generate_insights" | "assess_relevance" | "group_stories" | "draft_company" | "draft_competitor" | "write_digest" | "smoke";
 
 export type LlmUsage = {
   /** Total input tokens, including the cached part. */

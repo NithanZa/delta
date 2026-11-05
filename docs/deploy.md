@@ -94,7 +94,7 @@ docker compose logs -f worker
 docker compose logs -f web
 ```
 
-Job failures are also kept in `jobs.error` and shown on `/ops`. A held or failed digest emails `ops.email`.
+Job failures are also kept in `jobs.error` and shown on `/ops`. A held or failed digest emails `ops.email`, and so does spend crossing 80% and 100% of the monthly budget, if you set one in Settings.
 
 ## Known limitations
 

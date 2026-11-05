@@ -39,7 +39,7 @@ Other scripts: `npm run check` (tsc + eslint), `npm test` (vitest, offline with 
 ## How it works
 
 ```
-SourceProvider (seeded manifest | manual URL | search — stub)
+SourceProvider (seeded manifest | manual URL | watchlist | feeds | Exa discovery | Wayback backfill)
    → fetch (live or Wayback `id_` capture) → Readability → snapshot {url, source_type, published_at, fetched_at, raw_html, extracted_text, content_hash}
    → extract model (default claude-haiku-5-5): facts + verbatim quotes; same-URL change detection on a sentence diff
    → synthesize model (default claude-opus-5-5): timeline · hypotheses (created/strengthened/weakened/contradicted/revised) · strategy profile · open questions
@@ -56,6 +56,10 @@ Delta is built to send one partner a weekly digest about its real competitors wi
 - [docs/pilot-runbook.md](docs/pilot-runbook.md): what to ask the partner, what they get, what we store, and the 15-minute weekly operator checklist.
 - [docs/pilot-rehearsal.md](docs/pilot-rehearsal.md): the dress rehearsal to run end to end before a real partner.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). To add a data source or a model provider, see [docs/extending.md](docs/extending.md).
+
 ## Stack
 
 Next.js 16 (App Router) · TypeScript · Tailwind v4 · SQLite via Drizzle (`data/delta.db`) · Vercel AI SDK (`-sdk/anthropic`, `-sdk/openai-compatible`) · Readability + jsdom · Vitest. Runs locally with no deploy needed; [docs/deploy.md](docs/deploy.md) covers hosting it with Docker Compose.
@@ -65,7 +69,7 @@ Next.js 16 (App Router) · TypeScript · Tailwind v4 · SQLite via Drizzle (`dat
 - `src/lib/ingest/` — fetch, extract, snapshot, providers
 - `src/lib/pipeline/` — extraction, diff, synthesis, insights, run orchestrator, prompts, schemas
 - `src/lib/llm/` — model layer: roles, Vercel AI SDK adapter, provider config, pricing, offline mock
-- `src/db/` — Drizzle schema (13 tables) and migrations in `drizzle/`
+- `src/db/` — Drizzle schema and migrations in `drizzle/`
 - `src/app/` — pages, server actions, `/api/runs` (NDJSON stream) and `/api/sources`
 - `data/corpus/buffer/` — manifest and the 18 snapshot JSON files (the evidence)
 - `data/demo/delta.demo.db` — pre-computed database with the three replay runs
@@ -73,7 +77,11 @@ Next.js 16 (App Router) · TypeScript · Tailwind v4 · SQLite via Drizzle (`dat
 
 ## Honest limitations
 
-- No search provider yet: sources are the curated manifest plus URLs you add. `SearchProvider` is the extension point.
-- Two competitors are seeded (Buffer with 18 pages, SocialPilot with 8). More can be added in Settings; their evidence comes from the URLs you add until a search provider exists.
+- Off-domain discovery needs an Exa key. Without one, sources are the watchlist, feeds, the 24-month backfill and URLs you add.
+- Two competitors are seeded for the demo (Buffer with 18 pages, SocialPilot with 8). Onboarding adds real ones from their URLs.
 - Historical pages are Wayback Machine captures; their `published_at` is the capture date, which is when the content was verifiably live.
 - A full run against the real API takes several minutes (the reasoning models think); the shipped demo database exists so a presentation never depends on the network.
+
+## License
+
+Delta's code is under the [MIT license](LICENSE). The web pages captured in `data/` belong to their publishers and aren't covered by it.

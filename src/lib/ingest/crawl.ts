@@ -7,6 +7,7 @@ import { and, eq } from "drizzle-orm";
 import type { Db } from "@/db";
 import { schema } from "@/db";
 import type { Feed, FeedKind, Source, SourceType } from "@/db/schema";
+import { withUsageScope } from "@/lib/usage";
 import { fetchFeed, parseFeed, type FeedItem } from "./feeds";
 import { RobotsCache } from "./robots";
 import { createSnapshot, FetchError, hashContent, insertSnapshotRecord } from "./snapshot";
@@ -67,7 +68,11 @@ function sourceTypeForFeedItem(kind: FeedKind, url: string): SourceType {
   }
 }
 
-export async function crawlCompetitor(db: Db, competitorId: number, opts: CrawlOptions = {}): Promise<CrawlResult> {
+export function crawlCompetitor(db: Db, competitorId: number, opts: CrawlOptions = {}): Promise<CrawlResult> {
+  return withUsageScope({ competitorId }, () => crawl(db, competitorId, opts));
+}
+
+async function crawl(db: Db, competitorId: number, opts: CrawlOptions): Promise<CrawlResult> {
   const now = opts.now ?? new Date();
   const log = opts.log ?? (() => {});
   const delayMs = opts.delayMs ?? 1000;

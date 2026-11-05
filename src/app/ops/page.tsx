@@ -8,7 +8,10 @@ import { EnqueueButton } from "./enqueue-button";
 import { SendAnywayForm } from "./send-anyway";
 import { heldDigests } from "@/lib/digest/job";
 import { countEvents, funnelByWeek, listEvents } from "@/lib/events";
+import { budgetStatus } from "@/lib/budget";
+import { openWrongReactions } from "@/lib/reactions";
 import { DecisionForm } from "./decision-form";
+import { WrongReviewForm } from "./wrong-review-form";
 import { schema } from "@/db";
 import { desc, eq } from "drizzle-orm";
 
@@ -46,6 +49,8 @@ export default function OpsPage() {
   ].map(([name, pattern]) => ({ name, pattern, next: fmt(nextCronRun(pattern, schedule.timezone)) }));
   const jobs = listJobs(db, 50);
   const held = heldDigests(db);
+  const wrong = openWrongReactions(db);
+  const budget = budgetStatus(db);
   const funnel = countEvents(db);
   const weeks = funnelByWeek(db);
   const decisions = listEvents(db, "decision_influenced", 20);
@@ -113,6 +118,54 @@ export default function OpsPage() {
           </div>
         </Card>
       </div>
+
+      {budget && budget.level > 0 && (
+        <p className="rounded-md border border-warn/40 bg-warn/10 px-3 py-2 text-sm">
+          Spend this month is an estimated ${budget.spentUsd.toFixed(2)}
+          {budget.unpriced > 0 && " or more"} of the ${budget.budgetUsd.toFixed(2)} budget. Nothing has been stopped.{" "}
+          <Link href="/usage" className="text-accent hover:underline">
+            See where it went →
+          </Link>
+        </p>
+      )}
+
+      <Card>
+        <SectionTitle>Wrong reactions to review</SectionTitle>
+        {wrong.length === 0 ? (
+          <p className="text-sm text-muted">None waiting. When a reader marks an insight Wrong it appears here until you have checked it against its sources.</p>
+        ) : (
+          <ul className="grid gap-3">
+            {wrong.map(({ reaction, insight, competitor, evidence }) => (
+              <li key={reaction.id} className="rounded-md border border-line p-3 text-sm">
+                <p className="text-xs text-muted">
+                  {competitor.name} · {reaction.createdAt.slice(0, 10)} · {reaction.actorEmail ?? (reaction.source === "dashboard" ? "from the dashboard" : "from a digest link")}
+                  {reaction.digestId ? ` · digest #${reaction.digestId}` : ""}
+                </p>
+                <Link href={`/c/${competitor.slug}?tab=insights#i-${insight.id}`} className="font-medium hover:text-accent hover:underline">
+                  {insight.title}
+                </Link>
+                <p className="mt-1 text-muted">{insight.whatHappened}</p>
+                {reaction.note && <p className="mt-2 whitespace-pre-wrap border-l-2 border-bad/40 pl-2">{reaction.note}</p>}
+                {evidence.length > 0 && (
+                  <ul className="mt-2 grid gap-1 text-xs">
+                    {evidence.map((e) => (
+                      <li key={e.factId}>
+                        {e.quote ? `“${e.quote}”` : e.statement}{" "}
+                        <a href={e.url} target="_blank" rel="noreferrer" className="text-accent hover:underline">
+                          {e.title || e.url}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="mt-2">
+                  <WrongReviewForm reactionId={reaction.id} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

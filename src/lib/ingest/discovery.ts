@@ -8,8 +8,9 @@ import { schema } from "@/db";
 import type { LlmClient, LlmUsage } from "@/lib/llm/client";
 import { addUsage, emptyUsage } from "@/lib/llm/client";
 import { loadCompanyContext } from "@/lib/pipeline/context";
-import { assessRelevance } from "@/lib/pipeline/relevance";
+import { assessRelevance, groupStories, type Story } from "@/lib/pipeline/relevance";
 import { getSetting } from "@/lib/settings";
+import { withUsageScope } from "@/lib/usage";
 import { exaContents, type ExaOptions } from "./exa";
 import { SearchProvider, type SourceCandidate } from "./providers";
 import { createSnapshot, FetchError, hashContent, insertSnapshotRecord, type SnapshotRecord } from "./snapshot";
@@ -40,6 +41,37 @@ export type DiscoveryResult = {
   exaCostUsd: number;
 };
 
+/** A few pages corroborate a story; more of them cost extraction money and add little. */
+export const MAX_PAGES_PER_STORY = 3;
+
+/**
+ * Pick up to `max` pages. Things that happened come before pages that only
+ * describe the competitor: the best source of every event, then a second source
+ * to corroborate it, then the rest. Pages in a story are already best source first.
+ */
+export function selectAcrossStories<T extends { score?: number }>(candidates: T[], stories: Story[], max: number): T[] {
+  const topScore = (s: Story) => Math.max(...s.pages.map((i) => candidates[i].score ?? 0));
+  const ranked = [...stories].sort((a, b) => topScore(b) - topScore(a));
+  const events = ranked.filter((s) => s.event);
+  const others = ranked.filter((s) => !s.event);
+  const passes: [Story[], number][] = [
+    [events, 0],
+    [events, 1],
+    [others, 0],
+    [events, 2],
+    [others, 1],
+    [others, 2],
+  ];
+  const picked: T[] = [];
+  for (const [group, position] of passes) {
+    for (const story of group) {
+      const page = story.pages[position];
+      if (page !== undefined && picked.length < max) picked.push(candidates[page]);
+    }
+  }
+  return picked;
+}
+
 /** Snapshot from text Exa already fetched (JavaScript-only pages, blocked crawlers). */
 export function recordFromText(url: string, candidate: Pick<SourceCandidate, "sourceType" | "title" | "publishedAt" | "text">, now = new Date()): SnapshotRecord {
   const text = (candidate.text ?? "").trim();
@@ -57,7 +89,11 @@ export function recordFromText(url: string, candidate: Pick<SourceCandidate, "so
   };
 }
 
-export async function discoverCompetitor(db: Db, competitorId: number, opts: DiscoveryOptions): Promise<DiscoveryResult> {
+export function discoverCompetitor(db: Db, competitorId: number, opts: DiscoveryOptions): Promise<DiscoveryResult> {
+  return withUsageScope({ competitorId }, () => discover(db, competitorId, opts));
+}
+
+async function discover(db: Db, competitorId: number, opts: DiscoveryOptions): Promise<DiscoveryResult> {
   const log = opts.log ?? (() => {});
   const now = opts.now ?? new Date();
   const competitor = db.select().from(schema.competitors).where(eq(schema.competitors.id, competitorId)).get();
@@ -95,9 +131,19 @@ export async function discoverCompetitor(db: Db, competitorId: number, opts: Dis
     }
   }
 
-  // Highest-ranked first; the cap keeps a noisy week from flooding a run.
-  kept.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-  const toFetch = kept.slice(0, maxNewPages);
+  // The cap keeps a noisy week from flooding a run; sharing it across stories keeps one big story from taking every slot.
+  let stories: Story[] = kept.map((_, i) => ({ pages: [i], event: false }));
+  if (maxNewPages > 0 && kept.length > maxNewPages) {
+    try {
+      const grouped = await groupStories(competitor.name, kept, opts.client);
+      addUsage(result.usage, grouped.usage);
+      stories = grouped.stories;
+      log(`${kept.length} relevant pages cover ${stories.filter((s) => s.event).length} event(s) and ${stories.filter((s) => !s.event).length} other page(s); sharing ${maxNewPages} slots between them`);
+    } catch (e) {
+      log(`could not group pages into stories, keeping the highest ranked: ${(e as Error).message}`);
+    }
+  }
+  const toFetch = selectAcrossStories(kept, stories, maxNewPages);
   result.capped = kept.length - toFetch.length;
   for (const c of toFetch) {
     try {

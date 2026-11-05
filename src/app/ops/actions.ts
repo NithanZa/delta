@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { getDb } from "@/db";
-import { JOB_KINDS } from "@/db/schema";
+import { JOB_KINDS, REVIEW_OUTCOMES } from "@/db/schema";
 import { enqueue } from "@/lib/jobs/queue";
+import { reviewWrongReaction } from "@/lib/reactions";
 import { sendDigest } from "@/lib/digest/job";
 import { ResendSender } from "@/lib/digest/send";
 import { recordEvent } from "@/lib/events";
@@ -48,6 +49,21 @@ export async function sendAnyway(_prev: OpsState, formData: FormData): Promise<O
   } catch (e) {
     return { ok: false, message: (e as Error).message };
   }
+}
+
+const WrongReviewInput = z.object({
+  reactionId: z.coerce.number().int().positive(),
+  outcome: z.enum(REVIEW_OUTCOMES),
+  note: z.string().trim().max(2000).default(""),
+});
+
+/** Close a Wrong reaction once it has been checked against its sources. */
+export async function reviewWrong(_prev: OpsState, formData: FormData): Promise<OpsState> {
+  const p = WrongReviewInput.safeParse(Object.fromEntries(formData));
+  if (!p.success) return { ok: false, message: "Invalid input" };
+  if (!reviewWrongReaction(getDb(), p.data.reactionId, p.data.outcome, p.data.note)) return { ok: false, message: "That reaction no longer exists" };
+  revalidatePath("/ops");
+  return { ok: true, message: "Recorded" };
 }
 
 const DecisionInput = z.object({

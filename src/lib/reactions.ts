@@ -3,10 +3,10 @@
  * dashboard. Exactly one row per (insight, digest, kind); a repeated
  * click only updates the note.
  */
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { Db } from "@/db";
 import { schema } from "@/db";
-import type { Reaction, ReactionKind } from "@/db/schema";
+import type { Insight, Reaction, ReactionKind, ReviewOutcome } from "@/db/schema";
 import { recordEvent } from "@/lib/events";
 import { verifyReaction } from "@/lib/links";
 
@@ -24,7 +24,9 @@ export function findReaction(db: Db, insightId: number, digestId: number | null,
 export function react(db: Db, args: ReactArgs): { reaction: Reaction; created: boolean } {
   const existing = findReaction(db, args.insightId, args.digestId, args.kind);
   if (existing) {
-    const reaction = args.note !== undefined ? db.update(schema.reactions).set({ note: args.note }).where(eq(schema.reactions.id, existing.id)).returning().get() : existing;
+    // New context from the reader after a review puts the reaction back in the queue.
+    const reopen = existing.reviewedAt && args.note && args.note !== existing.note ? { reviewedAt: null, reviewOutcome: null, reviewNote: null } : {};
+    const reaction = args.note !== undefined ? db.update(schema.reactions).set({ note: args.note, ...reopen }).where(eq(schema.reactions.id, existing.id)).returning().get() : existing;
     return { reaction, created: false };
   }
   const reaction = db
@@ -47,6 +49,48 @@ export function reactFromToken(db: Db, token: string, note?: string, now?: Date)
   const competitor = db.select().from(schema.competitors).where(eq(schema.competitors.id, insight.competitorId)).get();
   const { created } = react(db, { insightId: v.payload.i, digestId: v.payload.d, kind: v.payload.k, source: "email", note });
   return { kind: v.payload.k, digestId: v.payload.d, insightId: v.payload.i, title: insight.title, slug: competitor?.slug ?? "", created };
+}
+
+export type WrongReview = {
+  reaction: Reaction;
+  insight: Pick<Insight, "id" | "title" | "whatHappened">;
+  competitor: { name: string; slug: string };
+  evidence: { factId: number; quote: string; statement: string; url: string; title: string }[];
+};
+
+/** Wrong reactions nobody has checked yet, oldest first, each with the evidence needed to check it. */
+export function openWrongReactions(db: Db): WrongReview[] {
+  const rows = db
+    .select({ reaction: schema.reactions, insight: schema.insights, competitor: schema.competitors })
+    .from(schema.reactions)
+    .innerJoin(schema.insights, eq(schema.reactions.insightId, schema.insights.id))
+    .innerJoin(schema.competitors, eq(schema.insights.competitorId, schema.competitors.id))
+    .where(and(eq(schema.reactions.kind, "wrong"), isNull(schema.reactions.reviewedAt)))
+    .orderBy(schema.reactions.id)
+    .all();
+  return rows.map(({ reaction, insight, competitor }) => ({
+    reaction,
+    insight: { id: insight.id, title: insight.title, whatHappened: insight.whatHappened },
+    competitor: { name: competitor.name, slug: competitor.slug },
+    evidence: insight.factIds.length
+      ? db
+          .select({ factId: schema.facts.id, quote: schema.facts.quote, statement: schema.facts.statement, url: schema.snapshots.url, title: schema.snapshots.title })
+          .from(schema.facts)
+          .innerJoin(schema.snapshots, eq(schema.facts.snapshotId, schema.snapshots.id))
+          .where(inArray(schema.facts.id, insight.factIds))
+          .all()
+      : [],
+  }));
+}
+
+/** Record what the operator found. Returns false when there is no such Wrong reaction. */
+export function reviewWrongReaction(db: Db, reactionId: number, outcome: ReviewOutcome, note = "", now = new Date()): boolean {
+  const res = db
+    .update(schema.reactions)
+    .set({ reviewedAt: now.toISOString(), reviewOutcome: outcome, reviewNote: note || null })
+    .where(and(eq(schema.reactions.id, reactionId), eq(schema.reactions.kind, "wrong")))
+    .run();
+  return res.changes > 0;
 }
 
 export function reactionsFor(db: Db, insightIds: number[]): Reaction[] {

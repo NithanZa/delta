@@ -79,7 +79,7 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <SectionTitle>Who gets the digest</SectionTitle>
-            <DigestSettingsForm values={digestValues} />
+            <DigestSettingsForm values={{ ...digestValues, budgetUsd: getSetting(db, "budget.monthlyUsd") }} />
           </Card>
           <div className="grid content-start gap-4">
             <Card>

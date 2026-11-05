@@ -14,6 +14,7 @@ import { extractReadable } from "@/lib/ingest/extract";
 import { fetchPage } from "@/lib/ingest/fetchPage";
 import { createSnapshot, hashContent, insertSnapshotRecord } from "@/lib/ingest/snapshot";
 import { domainFromWebsite, isOnDomain, sourceTypeForPath } from "@/lib/ingest/watchlist";
+import { withUsageScope } from "@/lib/usage";
 
 export type TopicSpec = { label: string; paths: string[]; query: string; keywords: RegExp; category: FactCategory; sourceType: SourceType };
 
@@ -70,7 +71,11 @@ function checkRun(db: Db, competitorId: number, now: Date) {
     .get();
 }
 
-export async function runAbsenceChecks(db: Db, competitorId: number, opts: AbsenceOptions = {}): Promise<AbsenceResult> {
+export function runAbsenceChecks(db: Db, competitorId: number, opts: AbsenceOptions = {}): Promise<AbsenceResult> {
+  return withUsageScope({ competitorId }, () => checkAbsences(db, competitorId, opts));
+}
+
+async function checkAbsences(db: Db, competitorId: number, opts: AbsenceOptions): Promise<AbsenceResult> {
   const now = opts.now ?? new Date();
   const log = opts.log ?? (() => {});
   const competitor = db.select().from(schema.competitors).where(eq(schema.competitors.id, competitorId)).get();
